@@ -1,111 +1,118 @@
 
 #include "Angel.h"
 
-namespace Angel {
-
-// ·µ»Ø´ÓÎÄ¼şÖĞ¶ÁÈ¡µÄ×Ö·û´®(ÒÔNULL½áÎ²)
-static char*   // staticĞŞÊÎÊ¹µÃ´Ëº¯Êı½öÔÚ´ËÎÄ¼ş¿É¼û
-readShaderSource(const char* shaderFile)
+namespace Angel
 {
-    FILE* fp = fopen(shaderFile, "r"); // ÒÔÖ»¶Á·½Ê½´ò¿ªÎÄ¼ş
 
-    if ( fp == NULL ) { return NULL; } 
+	// è¿”å›ä»æ–‡ä»¶ä¸­è¯»å–çš„å­—ç¬¦ä¸²(ä»¥NULLç»“å°¾)
+	// staticä¿®é¥°ä½¿å¾—æ­¤å‡½æ•°ä»…åœ¨æ­¤æ–‡ä»¶å¯è§
+	static char* readShaderSource(const char* shaderFile)
+	{
+		//FILE* fp = fopen(shaderFile, "r"); // ä»¥åªè¯»æ–¹å¼æ‰“å¼€æ–‡ä»¶
+		//if (fp == NULL) { return NULL; }
 
-    fseek(fp, 0L, SEEK_END); // ½«ÎÄ¼şÖ¸ÕëÒÆµ½ÎÄ¼şÎ²
-    long size = ftell(fp);   // ·µ»Øµ±Ç°ÎÄ¼şÖ¸ÕëÎ»ÖÃ£¬´ËÊ±¶ÔÓ¦ÎÄ¼ş³¤¶È
+		FILE* fp;
 
-    fseek(fp, 0L, SEEK_SET); // ½«ÎÄ¼şÖ¸ÕëÒÆµ½ÎÄ¼şÍ·
-    char* buf = new char[size + 1]; // ¸ù¾İsize´´½¨buffer£¬+1ÊÇÎªÁËÁôÎ»ÖÃ¸ø'\0'
-	memset(buf, 0, size+1);	 // Çå¿Õbuf
-    fread(buf, 1, size, fp); // ½«ÎÄ¼şÄÚÈİÒ»´ÎÈ«²¿¶Á³ö
+		if (!fopen_s(&fp, shaderFile, "r"))
+		{
+			fseek(fp, 0L, SEEK_END); // å°†æ–‡ä»¶æŒ‡é’ˆç§»åˆ°æ–‡ä»¶å°¾
+			long size = ftell(fp);   // è¿”å›å½“å‰æ–‡ä»¶æŒ‡é’ˆä½ç½®ï¼Œæ­¤æ—¶å¯¹åº”æ–‡ä»¶é•¿åº¦
 
-    buf[size] = '\0'; // ×îºóÎª¿Õ×Ö·û
-    fclose(fp);		  // ¹Ø±ÕÎÄ¼ş
+			fseek(fp, 0L, SEEK_SET); // å°†æ–‡ä»¶æŒ‡é’ˆç§»åˆ°æ–‡ä»¶å¤´
+			char* buf = new char[size + 1]; // æ ¹æ®sizeåˆ›å»ºbufferï¼Œ+1æ˜¯ä¸ºäº†ç•™ä½ç½®ç»™'\0'
+			memset(buf, 0, size + 1);	 // æ¸…ç©ºbuf
+			fread(buf, 1, size, fp); // å°†æ–‡ä»¶å†…å®¹ä¸€æ¬¡å…¨éƒ¨è¯»å‡º
 
-    return buf;		  // ·µ»Ø¶ÁÈ¡µ½µÄ×Ö·û´®
-}
+			buf[size] = '\0'; // æœ€åä¸ºç©ºå­—ç¬¦
+			fclose(fp);		  // å…³é—­æ–‡ä»¶
 
-
-// ¸ù¾İ¸ø¶¨µÄ¶¥µãºÍÆ¬ÔªshaderÎÄ¼ş´´½¨GLSL³ÌĞò¶ÔÏó
-GLuint
-InitShader(const char* vShaderFile, const char* fShaderFile)
-{
-    struct Shader {
-		const char*  filename; // shaderÎÄ¼şÃû
-		GLenum       type;     // shaderÀàĞÍ
-		GLchar*      source;   // shader³ÌĞò×Ö·û´®
-	} shaders[2] = {
-		{ vShaderFile, GL_VERTEX_SHADER, NULL },
-		{ fShaderFile, GL_FRAGMENT_SHADER, NULL }
-	}; // ¶¨ÒåShader½á¹¹ÌåÊı×éshaders
-
-    GLuint program = glCreateProgram(); // ´´½¨shader³ÌĞò¶ÔÏó£¬·µ»ØÆäID
-    
-    for ( int i = 0; i < 2; ++i ) { // ·Ö±ğ¶Ô¶¥µãshaderºÍÆ¬Ôªshader½ø³Ì´¦Àí
-		Shader& s = shaders[i];		// sÊÇshader[i]µÄÒıÓÃ
-		s.source = readShaderSource( s.filename ); // ´ÓÎÄ¼ş¶ÁÈ¡³ÌĞòÄÚÈİ(×Ö·û´®)
-		if ( shaders[i].source == NULL ) { // ¶ÁÈ¡Ê§°Ü£¿
-			std::cerr << "Failed to read " << s.filename << std::endl;
-			system("pause");
-			exit( EXIT_FAILURE );
+			return buf;		  // è¿”å›è¯»å–åˆ°çš„å­—ç¬¦ä¸²
 		}
+		else
+		{
+			return NULL;
+		}
+	}
 
-		// ´´½¨shader¶ÔÏó£¬²ÎÊıÎªshaderÀàĞÍ(GL_VERTEX_SHADER»òGL_FRAGMENT_SHADER)£¬·µ»Øshader¶ÔÏóID
-		GLuint shader = glCreateShader( s.type ); 
-		// Îªshader¶ÔÏóÖ¸¶¨shaderÔ´Âë
-		glShaderSource( shader,	// shader¶ÔÏóID 
-					1,		// ²ÎÊı3ÖĞº¬ÓĞµÄ×Ö·û´®¸öÊı
-					(const GLchar**) &s.source, // º¬ÓĞÔ´ÂëµÄ×Ö·û´®Êı×é
-					NULL	// ×Ö·û´®³¤¶ÈÊı×é(³ÉÔ±Îª²ÎÊı3ÖĞ¸÷×Ö·û´®³¤¶È)£¬ÎªNULL±íÊ¾¸÷×Ö·û´®¾ùÒÔNULL½áÊø)
-					);
-		glCompileShader( shader ); // ±àÒëshader³ÌĞò
 
-		GLint  compiled;
-		// »ñÈ¡±àÒë×´Ì¬ĞÅÏ¢
-		glGetShaderiv( shader,	// shader¶ÔÏóID
-			GL_COMPILE_STATUS,  // ±íÃ÷»ñÈ¡µÄÊÇ±àÒë×´Ì¬ĞÅÏ¢
-			&compiled			// Êä³ö²ÎÊı£¬ÓÃÓÚ´æ´¢ĞÅÏ¢(ÕâÀï¿ÉÄÜ·µ»ØGL_TRUE»òGL_FALSE)
+	// æ ¹æ®ç»™å®šçš„é¡¶ç‚¹å’Œç‰‡å…ƒshaderæ–‡ä»¶åˆ›å»ºGLSLç¨‹åºå¯¹è±¡
+	GLuint InitShader(const char* vShaderFile, const char* fShaderFile)
+	{
+		struct Shader {
+			const char* filename; // shaderæ–‡ä»¶å
+			GLenum       type;     // shaderç±»å‹
+			GLchar* source;   // shaderç¨‹åºå­—ç¬¦ä¸²
+		} shaders[2] = {
+			{ vShaderFile, GL_VERTEX_SHADER, NULL },
+			{ fShaderFile, GL_FRAGMENT_SHADER, NULL }
+		}; // å®šä¹‰Shaderç»“æ„ä½“æ•°ç»„shaders
+
+		GLuint program = glCreateProgram(); // åˆ›å»ºshaderç¨‹åºå¯¹è±¡ï¼Œè¿”å›å…¶ID
+
+		for (int i = 0; i < 2; ++i) { // åˆ†åˆ«å¯¹é¡¶ç‚¹shaderå’Œç‰‡å…ƒshaderè¿›ç¨‹å¤„ç†
+			Shader& s = shaders[i];		// sæ˜¯shader[i]çš„å¼•ç”¨
+			s.source = readShaderSource(s.filename); // ä»æ–‡ä»¶è¯»å–ç¨‹åºå†…å®¹(å­—ç¬¦ä¸²)
+			if (shaders[i].source == NULL) { // è¯»å–å¤±è´¥ï¼Ÿ
+				std::cerr << "Failed to read " << s.filename << std::endl;
+				exit(EXIT_FAILURE);
+			}
+
+			// åˆ›å»ºshaderå¯¹è±¡ï¼Œå‚æ•°ä¸ºshaderç±»å‹(GL_VERTEX_SHADERæˆ–GL_FRAGMENT_SHADER)ï¼Œè¿”å›shaderå¯¹è±¡ID
+			GLuint shader = glCreateShader(s.type);
+			// ä¸ºshaderå¯¹è±¡æŒ‡å®šshaderæºç 
+			glShaderSource(shader,	// shaderå¯¹è±¡ID 
+				1,		// å‚æ•°3ä¸­å«æœ‰çš„å­—ç¬¦ä¸²ä¸ªæ•°
+				(const GLchar**)&s.source, // å«æœ‰æºç çš„å­—ç¬¦ä¸²æ•°ç»„
+				NULL	// å­—ç¬¦ä¸²é•¿åº¦æ•°ç»„(æˆå‘˜ä¸ºå‚æ•°3ä¸­å„å­—ç¬¦ä¸²é•¿åº¦)ï¼Œä¸ºNULLè¡¨ç¤ºå„å­—ç¬¦ä¸²å‡ä»¥NULLç»“æŸ)
 			);
-		if ( !compiled ) {		// Èç¹û±àÒëÊ§°Ü
-			std::cerr << s.filename << " failed to compile:" << std::endl; // Êä³ö´íÎóĞÅÏ¢
-			GLint  logSize;
-			glGetShaderiv( shader, GL_INFO_LOG_LENGTH, &logSize ); // »ñÈ¡´íÎóĞÅÏ¢µÄ³¤¶È
-			char* logMsg = new char[logSize];  // ¸ù¾İĞÅÏ¢³¤¶È´´½¨buffer
-			// »ñÈ¡´íÎóĞÅÏ¢
-			glGetShaderInfoLog( shader, // shader¶ÔÏóID
-				logSize,	// ÓÃÓÚ´æ´¢ĞÅÏ¢µÄbuffer(ÕâÀï¼´logMsg)µÄ´óĞ¡
-				NULL,       // Êä³ö²ÎÊı£¬´æ´¢»ñÈ¡µ½µÄĞÅÏ¢³¤¶ÈµÄ±äÁ¿Ö¸Õë
-				logMsg      // ÓÃÓÚ±£´æĞÅÏ¢µÄ×Ö·ûbuffer
-				); 
-			std::cerr << logMsg << std::endl;	// Êä³ö´íÎóĞÅÏ¢
-			delete [] logMsg;
-			system("pause");
-			exit( EXIT_FAILURE );	// ÍË³ö³ÌĞò
+			glCompileShader(shader); // ç¼–è¯‘shaderç¨‹åº
+
+			GLint  compiled;
+			// è·å–ç¼–è¯‘çŠ¶æ€ä¿¡æ¯
+			glGetShaderiv(shader,	// shaderå¯¹è±¡ID
+				GL_COMPILE_STATUS,  // è¡¨æ˜è·å–çš„æ˜¯ç¼–è¯‘çŠ¶æ€ä¿¡æ¯
+				&compiled			// è¾“å‡ºå‚æ•°ï¼Œç”¨äºå­˜å‚¨ä¿¡æ¯(è¿™é‡Œå¯èƒ½è¿”å›GL_TRUEæˆ–GL_FALSE)
+			);
+			if (!compiled) {		// å¦‚æœç¼–è¯‘å¤±è´¥
+				std::cerr << s.filename << " failed to compile:" << std::endl; // è¾“å‡ºé”™è¯¯ä¿¡æ¯
+				GLint  logSize;
+				glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logSize); // è·å–é”™è¯¯ä¿¡æ¯çš„é•¿åº¦
+				char* logMsg = new char[logSize];  // æ ¹æ®ä¿¡æ¯é•¿åº¦åˆ›å»ºbuffer
+				// è·å–é”™è¯¯ä¿¡æ¯
+				glGetShaderInfoLog(shader, // shaderå¯¹è±¡ID
+					logSize,	// ç”¨äºå­˜å‚¨ä¿¡æ¯çš„buffer(è¿™é‡Œå³logMsg)çš„å¤§å°
+					NULL,       // è¾“å‡ºå‚æ•°ï¼Œå­˜å‚¨è·å–åˆ°çš„ä¿¡æ¯é•¿åº¦çš„å˜é‡æŒ‡é’ˆ
+					logMsg      // ç”¨äºä¿å­˜ä¿¡æ¯çš„å­—ç¬¦buffer
+				);
+				std::cerr << logMsg << std::endl;	// è¾“å‡ºé”™è¯¯ä¿¡æ¯
+				delete[] logMsg;
+				system("pause");
+				exit(EXIT_FAILURE);	// é€€å‡ºç¨‹åº
+			}
+
+			delete[] s.source;
+
+			glAttachShader(program, shader); // å°†shaderå¯¹è±¡ä¸programå¯¹è±¡å…³è”èµ·æ¥
 		}
 
-		delete [] s.source;
+		/* é“¾æ¥å¹¶æ£€æŸ¥é”™è¯¯ä¿¡æ¯ */
+		glLinkProgram(program);	// é“¾æ¥shaderç¨‹åº
 
-		glAttachShader( program, shader ); // ½«shader¶ÔÏóÓëprogram¶ÔÏó¹ØÁªÆğÀ´
-    }
+		GLint  linked;
+		glGetProgramiv(program, GL_LINK_STATUS, &linked); // è·å–é“¾æ¥ä¿¡æ¯ï¼Œå‚æ•°å«ä¹‰å’ŒglGetShaderivç±»ä¼¼
+		if (!linked) {	// é“¾æ¥å¤±è´¥ï¼Ÿ
+			std::cerr << "Shader program failed to link" << std::endl;
+			GLint  logSize;
+			glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logSize);	// è·å–é“¾æ¥ä¿¡æ¯çš„é•¿åº¦
+			char* logMsg = new char[logSize];
+			glGetProgramInfoLog(program, logSize, NULL, logMsg);	// è·å–é“¾æ¥ä¿¡æ¯
+			std::cerr << logMsg << std::endl;
+			delete[] logMsg;
+			system("pause");
+			exit(EXIT_FAILURE);
+		}
 
-    /* Á´½Ó²¢¼ì²é´íÎóĞÅÏ¢ */
-    glLinkProgram(program);	// Á´½Óshader³ÌĞò
+		return program;
+	}
 
-    GLint  linked;
-    glGetProgramiv( program, GL_LINK_STATUS, &linked ); // »ñÈ¡Á´½ÓĞÅÏ¢£¬²ÎÊıº¬ÒåºÍglGetShaderivÀàËÆ
-    if ( !linked ) {	// Á´½ÓÊ§°Ü£¿
-		std::cerr << "Shader program failed to link" << std::endl;
-		GLint  logSize;
-		glGetProgramiv( program, GL_INFO_LOG_LENGTH, &logSize);	// »ñÈ¡Á´½ÓĞÅÏ¢µÄ³¤¶È
-		char* logMsg = new char[logSize];
-		glGetProgramInfoLog( program, logSize, NULL, logMsg );	// »ñÈ¡Á´½ÓĞÅÏ¢
-		std::cerr << logMsg << std::endl;
-		delete [] logMsg;
-		system("pause");
-		exit( EXIT_FAILURE );
-    }
-
-    return program;
-}
-
-}  // ½áÊøÃüÃû¿Õ¼äÎªAngelµÄ´úÂë¿é
+}  // ç»“æŸå‘½åç©ºé—´ä¸ºAngelçš„ä»£ç å—
