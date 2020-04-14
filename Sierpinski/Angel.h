@@ -14,8 +14,8 @@
 // --- Include system headers ---
 //
 
-#include <cmath>	 // °üº¬C++ÊıÑ§¿â
-#include <iostream>  // °üº¬C++±ê×¼ÊäÈëÊä³ö¿â
+#include <cmath>	 // åŒ…å«C++æ•°å­¦åº“
+#include <iostream>  // åŒ…å«C++æ ‡å‡†è¾“å…¥è¾“å‡ºåº“
 
 //  Define M_PI in the case it's not defined in the math header file
 #ifndef M_PI
@@ -38,11 +38,11 @@
 #  include <GL/glew.h>
 #  include <GL/freeglut.h>
 #  include <GL/freeglut_ext.h>
-#pragma comment (lib, "glew32.lib")  // Zou Kun¶îÍâÔö¼Ó£¬ÓÃÓÚÁ´½Óglew¿â
+#pragma comment (lib, "glew32.lib")  // Zou Kuné¢å¤–å¢åŠ ï¼Œç”¨äºé“¾æ¥glewåº“
 #endif  // __APPLE__
 
 // Define a helpful macro for handling offsets into buffer objects
-// ¶¨Òåbuffer¶ÔÏóÆ«ÒÆÁ¿ºê£¬Ö÷ÒªÊµÏÖÀàĞÍ×ª»¯
+// å®šä¹‰bufferå¯¹è±¡åç§»é‡å®ï¼Œä¸»è¦å®ç°ç±»å‹è½¬åŒ–
 #define BUFFER_OFFSET( offset )   ((GLvoid*) (offset))
 
 //----------------------------------------------------------------------------
@@ -50,28 +50,29 @@
 //  --- Include our class libraries and constants ---
 //
 
-namespace Angel {
+namespace Angel
+{
 
-//  ÉùÃ÷¼ÓÔØ¶¥µãºÍÆ¬ÔªshaderµÄº¯Êı£¬´Ëº¯Êı¶¨ÒåÓÚInitShader.cppÖĞ
-GLuint InitShader( const char* vertexShaderFile,
-		   const char* fragmentShaderFile );
+	//  å£°æ˜åŠ è½½é¡¶ç‚¹å’Œç‰‡å…ƒshaderçš„å‡½æ•°ï¼Œæ­¤å‡½æ•°å®šä¹‰äºInitShader.cppä¸­
+	GLuint InitShader(const char* vertexShaderFile,
+		const char* fragmentShaderFile);
 
-//  ¶¨Òå×îĞ¡¸¡µãÊı£¬·ÀÖ¹±»0³ı
-const GLfloat  DivideByZeroTolerance = GLfloat(1.0e-07);
+	//  å®šä¹‰æœ€å°æµ®ç‚¹æ•°ï¼Œé˜²æ­¢è¢«0é™¤
+	const GLfloat  DivideByZeroTolerance = GLfloat(1.0e-07);
 
-//  ½Ç¶È×ª»¡¶ÈµÄÏµÊı 
-const GLfloat  DegreesToRadians = M_PI / 180.0;
+	//  è§’åº¦è½¬å¼§åº¦çš„ç³»æ•° 
+	const GLfloat  DegreesToRadians = M_PI / 180.0;
 
 }  // namespace Angel
 
-/*°üº¬×Ô¶¨ÒåµÄÍ·ÎÄ¼ş*/
+/*åŒ…å«è‡ªå®šä¹‰çš„å¤´æ–‡ä»¶*/
 #include "vec.h"
 #include "mat.h"
 
-// ´òÓ¡Êä³öºê£¬ÆäÖĞ#x±íÊ¾½«x×ªÎª×Ö·ûÊı×é
+// æ‰“å°è¾“å‡ºå®ï¼Œå…¶ä¸­#xè¡¨ç¤ºå°†xè½¬ä¸ºå­—ç¬¦æ•°ç»„
 #define Print(x)  do { std::cerr << #x " = " << (x) << std::endl; } while(0)
 
-//  Ê¹ÓÃAngelÃüÃû¿Õ¼ä
+//  ä½¿ç”¨Angelå‘½åç©ºé—´
 using namespace Angel;
 
 #endif // __ANGEL_H__
