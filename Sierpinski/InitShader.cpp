@@ -1,4 +1,3 @@
-
 #include "Angel.h"
 
 namespace Angel
