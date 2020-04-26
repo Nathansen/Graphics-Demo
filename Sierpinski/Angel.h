@@ -52,15 +52,21 @@
 
 namespace Angel
 {
+	struct Shader
+	{
+		const char* filename; // shader文件名
+		GLenum       type;     // shader类型
+		GLchar* source;   // shader程序字符串
+	}; // 定义Shader结构体数组shaders
+
 	//  声明加载顶点和片元shader的函数，此函数定义于InitShader.cpp中
-	GLuint InitShader(const char* vertexShaderFile,
-		const char* fragmentShaderFile);
+	GLuint InitShader(const char* vertexShaderFile, const char* fragmentShaderFile);
 
 	//  定义最小浮点数，防止被0除
-	const GLfloat  DivideByZeroTolerance = GLfloat(1.0e-07);
+	const GLfloat DivideByZeroTolerance = GLfloat(1.0e-07);
 
 	//  角度转弧度的系数 
-	const GLfloat  DegreesToRadians = M_PI / 180.0;
+	const GLfloat DegreesToRadians = M_PI / 180.0;
 
 }  // namespace Angel
 
