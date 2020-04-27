@@ -46,7 +46,7 @@ namespace Angel
 
 			GLuint shader = glCreateShader(s.type);
 
-			std::cout << (const GLint*)strlen(s.source) << std::endl;
+			//std::cout << (const GLint*)strlen(s.source) << std::endl;
 			GLint stringLen = strlen(s.source);
 			//std::cout << s.source << std::endl;
 

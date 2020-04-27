@@ -30,21 +30,10 @@ point4 vertices[6] =
 	point4(1.0, 0.0, 0.0, 1.0), // 右
 	point4(0.0, 0.0, -1.0, 1.0), // 后
 	point4(0.0, -1.0, 0.0, 1.0), // 底
-
-	///*前面4个顶点*/
-	//point4(-1.0, -1.0,  1.0, 1.0),	// 左下
-	//point4(-1.0,  1.0,  1.0, 1.0),	// 左上
-	//point4(1.0,  1.0,  1.0, 1.0),	// 右上
-	//point4(1.0, -1.0,  1.0, 1.0),	// 右下
-	///*后面4个顶点*/
-	//point4(-1.0, -1.0, -1.0, 1.0),	// 左下
-	//point4(-1.0,  1.0, -1.0, 1.0),	// 左上
-	//point4(1.0,  1.0, -1.0, 1.0),	// 右上
-	//point4(1.0, -1.0, -1.0, 1.0)	// 右下
 };
 
 // RGBA颜色
-color4 colors[8] =
+color4 colors[10] =
 {
 	color4(1.0, 0.0, 0.0, 1.0),	// 红
 	color4(1.0, 1.0, 0.0, 1.0),	// 黄
@@ -54,10 +43,12 @@ color4 colors[8] =
 	color4(0.3, 0.3, 0.0, 1.0),	// 浅黄
 	color4(0.0, 0.3, 0.0, 1.0),	// 浅绿
 	color4(0.0, 0.0, 0.3, 1.0),	// 浅蓝
+	color4(1.0, 1.0, 1.0, 1.0), // 白
+	color4(0.0, 0.0, 0.0, 1.0), // 黑
 };
 
 // 颜色枚举常量，值与colors中相应颜色的索引一致
-enum { RED, YELLOW, GREEN, BLUE, HALF_RED, HALF_YELLOW, HALF_GREEN, HALF_BLUE, };
+enum { RED, YELLOW, GREEN, BLUE, HALF_RED, HALF_YELLOW, HALF_GREEN, HALF_BLUE, WHITE, BLACK};
 
 const int NumVertices = 24;	// 8个面，每个面1个三角形，每个三角形3个顶点，共24个顶点
 point4 points[NumVertices] =
@@ -95,16 +86,16 @@ color4 colorsRight[NumVertices] =
 color4 colorsLeft[NumVertices] =
 {
 	// 上半部分
-	colors[RED], colors[RED], colors[RED],
-	colors[GREEN], colors[GREEN], colors[GREEN],
-	colors[BLUE], colors[BLUE], colors[BLUE],
-	colors[YELLOW], colors[YELLOW], colors[YELLOW],
+	colors[WHITE], colors[RED], colors[GREEN],
+	colors[WHITE], colors[GREEN], colors[BLUE],
+	colors[WHITE], colors[BLUE], colors[YELLOW],
+	colors[WHITE], colors[YELLOW], colors[RED],
 
 	// 下半部分
-	colors[HALF_RED], colors[HALF_RED], colors[HALF_RED],
-	colors[HALF_GREEN], colors[HALF_GREEN], colors[HALF_GREEN],
-	colors[HALF_BLUE], colors[HALF_BLUE], colors[HALF_BLUE],
-	colors[HALF_YELLOW], colors[HALF_YELLOW], colors[HALF_YELLOW],
+	colors[RED], colors[BLACK], colors[GREEN],
+	colors[GREEN], colors[BLACK], colors[BLUE],
+	colors[BLUE], colors[BLACK], colors[YELLOW],
+	colors[YELLOW], colors[BLACK], colors[RED],
 };
 
 GLuint vColor;	// shader中顶点属性变量"vColor"的索引
