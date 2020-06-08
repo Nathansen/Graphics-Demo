@@ -48,7 +48,7 @@ color4 colors[10] =
 };
 
 // 颜色枚举常量，值与colors中相应颜色的索引一致
-enum { RED, YELLOW, GREEN, BLUE, HALF_RED, HALF_YELLOW, HALF_GREEN, HALF_BLUE, WHITE, BLACK};
+enum { RED, YELLOW, GREEN, BLUE, HALF_RED, HALF_YELLOW, HALF_GREEN, HALF_BLUE, WHITE, BLACK };
 
 const int NumVertices = 24;	// 8个面，每个面1个三角形，每个三角形3个顶点，共24个顶点
 point4 points[NumVertices] =
@@ -183,7 +183,7 @@ void Display(void)
 	// 清除颜色缓存和深度缓存内容
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// 创建变换矩阵
+	// 创建变换矩阵 p'= ABCp = A(B(Cp))
 	mat4 transform = matProj		 // 投影矩阵
 		* Translate(0.0, 0.0, -25.0) // 沿z轴平移
 		* RotateY(RotateAngle)	     // 绕y轴旋转
@@ -332,7 +332,7 @@ int main(int argc, char** argv)
 	// 请求opengl 3.2以上版本才有效果，作用和glutInitContextFlags类似
 	//glutInitContextProfile( GLUT_CORE_PROFILE ); 
 
-	glutCreateWindow("Color Cube");	// 创建窗口，标题为"Color Cube",并初始化Context
+	glutCreateWindow("Color Octahedra");	// 创建窗口，标题为"Color Octahedra",并初始化Context
 
 	// 显卡驱动非正式发布版或者与glew库规范不兼容时加上此行
 	// 如果在glGenVertexArrays处发生Access Violation则加上此行
