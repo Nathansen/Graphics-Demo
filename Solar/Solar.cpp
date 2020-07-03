@@ -134,9 +134,12 @@ void Animate(void)
 
 	/*下面开始构建整个3D世界，在世界坐标系下考虑问题*/
 	// 太阳直接画在原点，无须变换，用一个黄色的球体表示
+	mvStack.push(mv); // 保存矩阵状态
+	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
 	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv * Scale(0.8, 0.8, 0.8)); // 传模视投影矩阵
 	glUniform3f(uColor, 1.0, 1.0, 0.0);  // 黄色
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+	mv = mvStack.pop();
 
 	/*对地球系统定位，绕太阳放置它*/
 	// 用DayOfYear来控制其绕太阳的旋转
@@ -146,8 +149,15 @@ void Animate(void)
 	/*下面开始在地球系统的小世界坐标系下考虑问题*/
 	// 绘制地球，地球的自转不应该影响月球
 	mvStack.push(mv); // 保存矩阵状态
+
+	// 抵消公转对自身倾斜方向的影响，保证公转后 仍然向右倾斜
+	mv *= Rotate(-360.0 * DayOfYear / 365.0, 0.0, 1.0, 0.0);
+
+	// 地球向 右倾斜 40度
+	mv *= Rotate(-40.0, 0.0, 0.0, 1.0);
 	// 地球自转，用HourOfDay进行控制
 	mv *= Rotate(360.0 * HourOfDay / 24.0, 0.0, 1.0, 0.0);
+	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
 	// 最后，画一个蓝色的球来表示地球
 	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv * Scale(0.4, 0.4, 0.4)); // 传模视投影矩阵
 	glUniform3f(uColor, 0.2, 0.2, 1.0);  // 蓝色
@@ -159,6 +169,7 @@ void Animate(void)
 	mv *= Rotate(360.0 * 12.0 * DayOfYear / 365.0, 0.0, 1.0, 0.0);
 	mv *= Translate(0.7, 0.0, 0.0);
 	mv *= Scale(0.1, 0.1, 0.1);
+	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
 	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv); // 传模视投影矩阵
 	glUniform3f(uColor, 0.3, 0.7, 0.3);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
