@@ -1,10 +1,10 @@
-#version 140
+ï»¿#version 140
 
-in vec3 vPosition;		 // ÊäÈë¶¥µã×ø±ê
-uniform mat4 MVPMatrix;  // Ä£ÊÓÍ¶Ó°¾ØÕó
+in vec3 vPosition;		 // è¾“å…¥é¡¶ç‚¹åæ ‡
+uniform mat4 MVPMatrix;  // æ¨¡è§†æŠ•å½±çŸ©é˜µ
 
 void main()
 {
-	// ½«Ä£ÊÓÍ¶Ó°¾ØÕóÓ¦ÓÃÓÚ¶¥µã×ø±ê
+	// å°†æ¨¡è§†æŠ•å½±çŸ©é˜µåº”ç”¨äºé¡¶ç‚¹åæ ‡
 	gl_Position = MVPMatrix * vec4(vPosition, 1.0);
 }

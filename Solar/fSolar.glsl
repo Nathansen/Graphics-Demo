@@ -1,7 +1,7 @@
-#version 140
+﻿#version 140
 
-uniform vec3 uColor;	 // ƬԪ��ɫ
-out vec4 fragColor;		 // ���ƬԪ��ɫ
+uniform vec3 uColor;	 // 片元颜色
+out vec4 fragColor;		 // 输出片元颜色
 
 void main()
 {
