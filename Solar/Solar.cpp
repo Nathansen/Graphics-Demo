@@ -75,7 +75,7 @@ GLsizei BuildSphere(GLfloat radius, GLsizei columns, GLsizei rows)
 
 	/*生成最终顶点数组数据*/
 	if (sphere)
-		delete sphere;	// 如果sphere已经有数据，先回收
+		delete[] sphere;	// 如果sphere已经有数据，先回收
 	NumVertices = rows * columns * 6; // 顶点数
 	sphere = new point3[NumVertices];
 
@@ -102,7 +102,7 @@ GLsizei BuildSphere(GLfloat radius, GLsizei columns, GLsizei rows)
 		}
 	}
 
-	delete[]vertices;
+	delete[] vertices;
 
 	return NumVertices;
 }
@@ -126,8 +126,8 @@ void Animate(void)
 	mat4 mv;	// 定义模视矩阵，默认初始化为恒等矩阵
 
 	// 在观察坐标系(照相机坐标系)下思考，定位整个场景(第一种观点)或世界坐标系(第二种观点)
-	// 向负z轴方向平移8个单位
-	mv *= Translate(0.0, 0.0, -8.0);
+	// 向负z轴方向平移15个单位
+	mv *= Translate(0.0, 0.0, -15.0);
 
 	// 将太阳系绕x轴旋转15度以便在xy-平面上方观察
 	mv *= Rotate(15.0, 1.0, 0.0, 0.0);
@@ -247,7 +247,7 @@ void ResizeWindow(int w, int h)
 	float aspectRatio = (float)w / (float)h;
 
 	// 设置投影矩阵
-	proj = Perspective(60.0, aspectRatio, 1.0, 30.0);
+	proj = Perspective(30.0, aspectRatio, 1.0, 30.0);
 }
 
 // r键处理
