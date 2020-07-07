@@ -6,11 +6,12 @@
 
 //------------------------------------------------------------------------------
 //	用于演示变换和坐标系
-//	画了一个简单的太阳系，包括一个太阳，一个地球和一个月球
+//	画了一个简单的太阳系，包括一个太阳，一个地球，一个地球同步卫星和一个月球
 //	使用说明：
-//	按"r"键来启动和停止动画
-//	按"s"键单步执行动画
-//	向上和向下箭头用于控制动画中每一帧的时间间隔,每次按键时间间隔乘2或除2
+//	按 "r" 键来启动和停止动画
+//	按 "s" 键单步执行动画
+//	按 "t" 键切换透视和俯视图
+//	方向键 上下箭头 用于控制动画中每一帧的时间间隔,每次按键时间间隔乘2或除2
 //	按ESC键退出
 //------------------------------------------------------------------------------
 
@@ -21,10 +22,18 @@ typedef vec3 point3;
 GLenum spinMode = GL_TRUE;		// 控制动画运行和暂停
 GLenum singleStep = GL_FALSE;	// 控制单步执行模式开启和关闭
 
+GLuint vPosition;  // shader中in变量vPosition的索引
+
+GLuint vaoSphere;
+GLuint vaoRing;
+
 // 这3个变量控制动画的状态和速度
 float HourOfDay = 0.0;			// 一天中的小时数，初始为0
 float DayOfYear = 0.0;			// 一年中的天数，初始为0
 float AnimateIncrement = 24.0;  // 动画步长变量，表示时间间隔, 以小时为单位
+
+float ErothAxialAngle = -23.44; // 地球轴与 Y 轴夹角
+float ViewAngle = 15.0; // 观察角度
 
 MatrixStack mvStack;  // 模视矩阵栈
 mat4 proj;	// 投影矩阵
@@ -34,6 +43,9 @@ GLuint uColor;		// Shader中uniform变量"uColor"的索引
 
 GLsizei NumVertices;	// 一个球的顶点数
 point3* sphere;			// 存放一个球的顶点坐标数据的指针
+
+GLsizei NumRing = 72; // 一个环的顶点数
+point3* ring; // 存放一个环的顶点数
 
 // 用于生成一个中心在原点的球的顶点坐标数据(南北极在z轴方向)
 // 返回值为球的顶点数，参数为球的半径及经线和纬线数
@@ -75,7 +87,9 @@ GLsizei BuildSphere(GLfloat radius, GLsizei columns, GLsizei rows)
 
 	/*生成最终顶点数组数据*/
 	if (sphere)
+	{
 		delete[] sphere;	// 如果sphere已经有数据，先回收
+	}
 	NumVertices = rows * columns * 6; // 顶点数
 	sphere = new point3[NumVertices];
 
@@ -107,6 +121,33 @@ GLsizei BuildSphere(GLfloat radius, GLsizei columns, GLsizei rows)
 	return NumVertices;
 }
 
+void BuildRing(GLfloat radius, GLsizei num)
+{
+	int index = 0;	// 数组索引
+	/*生成最终顶点数组数据*/
+	if (ring)
+	{
+		delete[] ring;	// 如果 ring 已经有数据，先回收
+	}
+	ring = new point3[num]; // 存放不同顶点的数组
+	NumRing = num;
+
+	for (int i = 0; i < num; i++)
+	{
+		float v = (float)i / (float)num;  // [0,1] 单前第几段
+		float theta1 = v * 2.0 * (float)M_PI;	   // [0,PI]
+
+		point3 n(0, 0, 0);
+		GLfloat cosTheta1 = cos(theta1);
+		GLfloat sinTheta1 = sin(theta1);
+		n.x = radius * cosTheta1;
+		n.y = radius * sinTheta1;
+
+		ring[i] = n;
+	}
+
+}
+
 // 显示回调函数
 void Animate(void)
 {
@@ -130,15 +171,26 @@ void Animate(void)
 	mv *= Translate(0.0, 0.0, -15.0);
 
 	// 将太阳系绕x轴旋转15度以便在xy-平面上方观察
-	mv *= Rotate(15.0, 1.0, 0.0, 0.0);
+	mv *= Rotate(ViewAngle, 1.0, 0.0, 0.0);
+	//mv *= Rotate(90.0, 1.0, 0.0, 0.0); // 俯视角度
 
 	/*下面开始构建整个3D世界，在世界坐标系下考虑问题*/
 	// 太阳直接画在原点，无须变换，用一个黄色的球体表示
 	mvStack.push(mv); // 保存矩阵状态
 	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
+	glBindVertexArray(vaoSphere);
 	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv * Scale(0.8, 0.8, 0.8)); // 传模视投影矩阵
 	glUniform3f(uColor, 1.0, 1.0, 0.0);  // 黄色
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+	mv = mvStack.pop();
+
+	// 绘制地球轨道
+	mvStack.push(mv);
+	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
+	glBindVertexArray(vaoRing);
+	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv * Scale(4, 4, 4)); // 传模视投影矩阵
+	glUniform3f(uColor, 0.0, 0.0, 1.0);  // 蓝色
+	glDrawArrays(GL_LINE_LOOP, 0, NumRing);
 	mv = mvStack.pop();
 
 	/*对地球系统定位，绕太阳放置它*/
@@ -153,16 +205,54 @@ void Animate(void)
 	// 抵消公转对自身倾斜方向的影响，保证公转后 仍然向右倾斜
 	mv *= Rotate(-360.0 * DayOfYear / 365.0, 0.0, 1.0, 0.0);
 
-	// 地球向 右倾斜 40度
-	mv *= Rotate(-40.0, 0.0, 0.0, 1.0);
+	// 地球向 右倾斜 23.44度
+	mv *= Rotate(ErothAxialAngle, 0.0, 0.0, 1.0);
 	// 地球自转，用HourOfDay进行控制
 	mv *= Rotate(360.0 * HourOfDay / 24.0, 0.0, 1.0, 0.0);
 	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
 	// 最后，画一个蓝色的球来表示地球
+	glBindVertexArray(vaoSphere);
 	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv * Scale(0.4, 0.4, 0.4)); // 传模视投影矩阵
 	glUniform3f(uColor, 0.2, 0.2, 1.0);  // 蓝色
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	mv = mvStack.pop(); // 恢复矩阵状态
+
+	// 绘制地球同步卫星轨道
+	mvStack.push(mv);
+	// 抵消地球公转对自身倾斜方向的影响，保证公转后 仍然向右倾斜
+	mv *= Rotate(-360.0 * DayOfYear / 365.0, 0.0, 1.0, 0.0);
+
+	mv *= Rotate(ErothAxialAngle, 0.0, 0.0, 1.0);
+	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
+	glBindVertexArray(vaoRing);
+	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv * Scale(0.5, 0.5, 0.5));
+	glUniform3f(uColor, 0.5, 0.0, 0.5);  // 紫色
+	glDrawArrays(GL_LINE_LOOP, 0, NumRing);
+	mv = mvStack.pop();
+
+	// 地球同步卫星
+	mvStack.push(mv);
+	// 抵消地球公转对自身倾斜方向的影响，保证公转后 仍然向右倾斜
+	mv *= Rotate(-360.0 * DayOfYear / 365.0, 0.0, 1.0, 0.0);
+
+	mv *= Rotate(ErothAxialAngle, 0.0, 0.0, 1.0);
+	mv *= Rotate(360.0 * HourOfDay / 24.0, 0.0, 1.0, 0.0); // 旋转速度与地球相同
+	mv *= Translate(0.5, 0.0, 0.0);
+	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
+	glBindVertexArray(vaoSphere);
+	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv * Scale(0.05, 0.05, 0.05)); // 传模视投影矩阵
+	glUniform3f(uColor, 0.5, 0.0, 0.5);  // 紫色
+	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+	mv = mvStack.pop();
+
+	// 绘制月球轨道
+	mvStack.push(mv);
+	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
+	glBindVertexArray(vaoRing);
+	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv * Scale(0.7, 0.7, 0.7));
+	glUniform3f(uColor, 0.3, 0.7, 0.3);
+	glDrawArrays(GL_LINE_LOOP, 0, NumRing);
+	mv = mvStack.pop();
 
 	/*画月球*/
 	// 用DayOfYear来控制其绕地球的旋转
@@ -170,6 +260,7 @@ void Animate(void)
 	mv *= Translate(0.7, 0.0, 0.0);
 	mv *= Scale(0.1, 0.1, 0.1);
 	mv *= Rotate(90.0, 1.0, 0.0, 0.0);
+	glBindVertexArray(vaoSphere);
 	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv); // 传模视投影矩阵
 	glUniform3f(uColor, 0.3, 0.7, 0.3);
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
@@ -181,16 +272,11 @@ void Animate(void)
 	}
 }
 
-// 初始化OpenGL的状态
-void Init(void)
+void InitSphere()
 {
-	// 生成中心在原点半径为1,15条经线和纬线的球的顶点
-	BuildSphere(1.0, 15, 15);
-
 	/*创建一个顶点数组对象(VAO)*/
-	GLuint vao;
-	glGenVertexArrays(1, &vao);  // 生成一个未用的VAO ID，存于变量vao中
-	glBindVertexArray(vao);      // 创建id为vao的VAO，并绑定为当前VAO
+	glGenVertexArrays(1, &vaoSphere);  // 生成一个未用的VAO ID，存于变量vao中
+	glBindVertexArray(vaoSphere);      // 创建id为vao的VAO，并绑定为当前VAO
 
 	/*创建并初始化一个缓冲区对象(Buffer Object)*/
 	GLuint buffer;
@@ -204,15 +290,8 @@ void Init(void)
 		GL_STATIC_DRAW	// 表明将如何使用Buffer的标志(GL_STATIC_DRAW含义是一次提供数据，多遍绘制)
 	);
 
-	/*加载shader并使用所得到的shader程序*/
-	// InitShader为InitShader.cpp中定义的函数，参数分别为顶点和片元shader的文件名
-	// 返回值为shader程序对象的ID
-	GLuint program = InitShader("vSolar.glsl", "fSolar.glsl");
-	glUseProgram(program); // 使用该shader程序
+	delete[] sphere; // 数据已传到 GPU，可删除顶点数据
 
-	/*初始化顶点着色器中的顶点位置属性*/
-	// 获取shader程序中属性变量的位置(索引)
-	GLuint vPosition = glGetAttribLocation(program, "vPosition");
 	glEnableVertexAttribArray(vPosition);	// 启用顶点属性数组
 	// 为顶点属性数组提供数据(数据存放在之前buffer对象中)
 	glVertexAttribPointer(
@@ -223,7 +302,60 @@ void Init(void)
 		0,  // 在数组中相邻属性成员起始位置间的间隔(以字节为单位)
 		BUFFER_OFFSET(0)    // 第一个属性值在buffer中的偏移量
 	);
+}
 
+void InitRing()
+{
+	/*创建一个顶点数组对象(VAO)*/
+	glGenVertexArrays(1, &vaoRing);  // 生成一个未用的VAO ID，存于变量vao中
+	glBindVertexArray(vaoRing);      // 创建id为vao的VAO，并绑定为当前VAO
+
+	/*创建并初始化一个缓冲区对象(Buffer Object)*/
+	GLuint bufferRing;
+	glGenBuffers(1, &bufferRing); // 生成一个未用的缓冲区对象ID，存于变量buffer中
+	// 创建id为buffer的Array Buffer对象，并绑定为当前Array Buffer对象
+	glBindBuffer(GL_ARRAY_BUFFER, bufferRing);
+	// 为Buffer对象在GPU端申请空间，并提供数据
+	glBufferData(GL_ARRAY_BUFFER,	// Buffer类型
+		sizeof(point3) * NumRing,  // 申请空间大小(注意不能是sizeof(sphere),否则是指针变量的大小——4字节)
+		ring,			 // 提供数据
+		GL_STATIC_DRAW	// 表明将如何使用Buffer的标志(GL_STATIC_DRAW含义是一次提供数据，多遍绘制)
+	);
+
+	delete[] ring; // 数据已传到 GPU，可删除顶点数据
+
+	glEnableVertexAttribArray(vPosition);	// 启用顶点属性数组
+	// 为顶点属性数组提供数据(数据存放在之前buffer对象中)
+	glVertexAttribPointer(
+		vPosition,			// 属性变量索引
+		3,					// 每个顶点属性的分量个数
+		GL_FLOAT,			// 数组数据类型
+		GL_FALSE,			// 是否进行归一化处理
+		0,  // 在数组中相邻属性成员起始位置间的间隔(以字节为单位)
+		BUFFER_OFFSET(0)    // 第一个属性值在buffer中的偏移量
+	);
+}
+
+// 初始化OpenGL的状态
+void Init(void)
+{
+	// 生成中心在原点半径为1,15条经线和纬线的球的顶点
+	BuildSphere(1.0, 15, 15);
+	// 生成一个位于 x y 平面的轨道环
+	BuildRing(1.0, 72);
+
+	/*加载shader并使用所得到的shader程序*/
+	// InitShader为InitShader.cpp中定义的函数，参数分别为顶点和片元shader的文件名
+	// 返回值为shader程序对象的ID
+	GLuint program = InitShader("vSolar.glsl", "fSolar.glsl");
+	glUseProgram(program); // 使用该shader程序
+
+	/*初始化顶点着色器中的顶点位置属性*/
+	// 获取shader程序中属性变量的位置(索引)
+	vPosition = glGetAttribLocation(program, "vPosition");
+
+	InitSphere();
+	InitRing();
 
 	// 获取shader中uniform变量"MVPMatrix"的索引
 	MVPMatrix = glGetUniformLocation(program, "MVPMatrix");
@@ -281,9 +413,18 @@ void KeyPressFunc(unsigned char Key, int x, int y)
 	case 'S':
 		Key_s();
 		break;
+	case 't':
+	case 'T':
+		if (ViewAngle > 15.0)
+		{
+			ViewAngle = 15.0;
+		}
+		else
+		{
+			ViewAngle = 90.0;
+		}
+		break;
 	case 27:	// Esc键
-		if (sphere)	// 如果sphere不为空
-			delete sphere;  // 回收内存
 		exit(EXIT_SUCCESS);
 	}
 }
