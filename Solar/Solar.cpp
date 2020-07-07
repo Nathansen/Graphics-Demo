@@ -267,7 +267,8 @@ void Animate(void)
 
 	glutSwapBuffers();					// 交换缓存
 
-	if (singleStep) {					// 如果是单步执行，则关闭动画
+	if (singleStep) 
+	{					// 如果是单步执行，则关闭动画
 		spinMode = GL_FALSE;
 	}
 }
@@ -341,7 +342,7 @@ void Init(void)
 {
 	// 生成中心在原点半径为1,15条经线和纬线的球的顶点
 	BuildSphere(1.0, 15, 15);
-	// 生成一个位于 x y 平面的轨道环
+	// 生成一个位于 x y 平面的轨道环 72个顶点
 	BuildRing(1.0, 72);
 
 	/*加载shader并使用所得到的shader程序*/

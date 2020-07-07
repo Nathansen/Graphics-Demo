@@ -957,7 +957,8 @@ namespace Angel
 		return c;
 	}
 
-	class MatrixStack {
+	class MatrixStack 
+	{
 		int    _index;
 		int    _size;
 		mat4* _matrices;
@@ -973,12 +974,14 @@ namespace Angel
 			delete[]_matrices;
 		}
 
-		void push(const mat4& m) {
+		void push(const mat4& m) 
+		{
 			assert(_index + 1 < _size);
 			_matrices[_index++] = m;
 		}
 
-		mat4& pop(void) {
+		mat4& pop(void) 
+		{
 			assert(_index - 1 >= 0);
 			_index--;
 			return _matrices[_index];
