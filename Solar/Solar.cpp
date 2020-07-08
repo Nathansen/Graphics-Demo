@@ -134,7 +134,7 @@ void BuildRing(GLfloat radius, GLsizei num)
 
 	for (int i = 0; i < num; i++)
 	{
-		float v = (float)i / (float)num;  // [0,1] 单前第几段
+		float v = (float)i / (float)num;  // [0,1] 当前第几段
 		float theta1 = v * 2.0 * (float)M_PI;	   // [0,PI]
 
 		point3 n(0, 0, 0);
