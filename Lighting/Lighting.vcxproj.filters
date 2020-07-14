@@ -33,4 +33,18 @@
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="fPhongTest.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="vPhongTest.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="fPhong.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="vPhong.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
 </Project>

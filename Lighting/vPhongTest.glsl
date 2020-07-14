@@ -15,6 +15,6 @@ void main()
 {
     vs_out.FragPos = vPosition;
     vs_out.Normal = vNormal;
-    vs_out.Color = vec3(1, 1, 1);
+    vs_out.Color = vec3(0, 0, 1);
     gl_Position = MVPMatrix * vec4(vPosition, 1.0);
 }
