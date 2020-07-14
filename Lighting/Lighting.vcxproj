@@ -147,7 +147,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="InitShader.cpp" />
     <ClCompile Include="Lighting.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Angel.h" />
+    <ClInclude Include="mat.h" />
+    <ClInclude Include="vec.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
