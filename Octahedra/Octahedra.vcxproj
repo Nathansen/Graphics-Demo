@@ -155,6 +155,10 @@
     <ClInclude Include="mat.h" />
     <ClInclude Include="vec.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="fOctahedra.glsl" />
+    <None Include="vOctahedra.glsl" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

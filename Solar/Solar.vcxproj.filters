@@ -33,4 +33,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="fSolar.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="vSolar.glsl">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
 </Project>

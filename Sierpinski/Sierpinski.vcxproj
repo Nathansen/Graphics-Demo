@@ -156,6 +156,10 @@
     <ClInclude Include="mat.h" />
     <ClInclude Include="vec.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="fSierpinski.glsl" />
+    <None Include="vSierpinski.glsl" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
