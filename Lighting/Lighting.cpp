@@ -29,9 +29,16 @@ GLsizei NumVertices;	// 球的顶点数
 GLuint vPosition;	// Shader 中 in 变量 vPosition 的索引
 GLuint vNormal;		// Shader 中 vNormal 的索引
 GLuint MVPMatrix;	// Shader 中 uniform 变量 MVPMatrix 的索引
+GLuint ModelMatrix;	// Shader 中 uniform 变量 ModelMatrix 的索引
+GLuint LigithPos;	// Shader 中 uniform 变量 LigithPos 的索引
+GLuint ViewPos;	// Shader 中 uniform 变量 ViewPos 的索引
+GLuint blinn;		// Shader 中 uniform 变量 blinn 的索引
+
 GLuint uColor;		// Shader 中 uniform 变量 uColor 的索引
 
 mat4 proj;	// 投影矩阵
+
+bool useBlinnPhong = false;
 
 //环境光1
 lightingStruct whiteLight = {
@@ -39,6 +46,10 @@ lightingStruct whiteLight = {
 	color4(1.0, 1.0, 1.0, 1.0),
 	color4(1.0, 1.0, 1.0, 1.0)
 };
+
+// 光源位置
+vec3 lightPos = vec3(2.4f, 2.0f, 4.0f);
+vec3 viewPos = vec3(0.0f, 0.0f, -15.0f);
 
 // 用于生成一个中心在原点的球的顶点坐标数据(南北极在z轴方向)
 // 返回值为球的顶点数，参数为球的半径及经线和纬线数
@@ -133,13 +144,13 @@ void InitSphere(GLuint numVertices)
 		NULL,			 // 暂时不提供数据
 		GL_STATIC_DRAW	// 表明将如何使用Buffer的标志(GL_STATIC_DRAW含义是一次提供数据，多遍绘制)
 	);
-	
+
 	// 填充顶点
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(point3) * numVertices, sphere);
 	// 填充法线 球的顶点和法线数据一样 直接复用顶点
-	glBufferSubData(GL_ARRAY_BUFFER, 
-		sizeof(point3) * numVertices, 
-		sizeof(vec3) * numVertices, 
+	glBufferSubData(GL_ARRAY_BUFFER,
+		sizeof(point3) * numVertices,
+		sizeof(vec3) * numVertices,
 		sphere);
 
 	delete[] sphere; // 数据已传到 GPU，可删除顶点数据
@@ -181,18 +192,26 @@ void Init(void)
 
 	/*初始化顶点着色器中的顶点位置属性*/
 	// 获取shader程序中属性变量的位置(索引)
+	//vPosition = glGetAttribLocation(program, "vPosition");
+	//vNormal = glGetAttribLocation(program, "vNormal");
 	vPosition = glGetAttribLocation(program, "vPosition");
 	vNormal = glGetAttribLocation(program, "vNormal");
 	InitSphere(NumVertices);
 
-	// 获取shader中uniform变量"MVPMatrix"的索引
+	// 获取shader中uniform变量的索引
 	MVPMatrix = glGetUniformLocation(program, "MVPMatrix");
+	ModelMatrix = glGetUniformLocation(program, "ModelMatrix");
+	LigithPos = glGetUniformLocation(program, "LigithPos");
+	ViewPos = glGetUniformLocation(program, "ViewPos");
+	blinn = glGetUniformLocation(program, "blinn");
 
 	// 获取shader中uniform变量"uColor"的索引
 	//uColor = glGetUniformLocation(program, "uColor");
 
-	glClearColor(0.0, 0.0, 0.0, 0.0);		// 背景为黑色				
+	glClearColor(1.0, 1.0, 1.0, 0.0);		// 背景为白色			
 	glEnable(GL_DEPTH_TEST);				// 开启深度检测
+
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	// 线框模式
 
 	glCullFace(GL_BACK);		// 剔除背面	
 	glEnable(GL_CULL_FACE);	// 开启面剔除，默认剔除背面
@@ -216,21 +235,44 @@ void Display(void)
 	// 用背景色清空颜色缓存，将深度缓存恢复为初始值
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	mat4 mv;	// 定义模视矩阵，默认初始化为恒等矩阵
+	// 定义模视矩阵，默认初始化为恒等矩阵
+	mat4 view;
+	mat4 modele;
 
-	// 在观察坐标系(照相机坐标系)下思考，定位整个场景(第一种观点)或世界坐标系(第二种观点)
 	// 向负z轴方向平移15个单位
-	mv *= Translate(0.0, 0.0, -15.0);
+	view *= Translate(viewPos);
 
-	//mv *= Translate(-15.0, 0.0, 0.0);
+	modele *= Rotate(90, 1.0f, 0.0f, 0.0f);
 
 	//glBindVertexArray(vaoSphere);
-	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * mv); // 传模视投影矩阵
-	//glUniform3f(uColor, 0.5, 0.0, 0.5);  // 紫色
+	glUniformMatrix4fv(ModelMatrix, 1, GL_TRUE, modele);
+	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * view * modele); // 传模视投影矩阵
+
+	glUniform3f(LigithPos, lightPos.x, lightPos.y, lightPos.z);
+	glUniform3f(ViewPos, viewPos.x, viewPos.y, viewPos.z);
+	//glUniform3f(ViewPos, 0, 0, 10);
+
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 
 
 	glutSwapBuffers();					// 交换缓存
+}
+
+void KeyPressFunc(unsigned char Key, int x, int y)
+{
+	switch (Key)
+	{
+	case 't':
+	case 'T':
+		useBlinnPhong = !useBlinnPhong;
+		glUniform1i(blinn, useBlinnPhong ? 1 : 0);
+		break;
+	case 27:	// Esc键
+		exit(EXIT_SUCCESS);
+		break;
+	default:
+		break;
+	}
 }
 
 int main(int argc, char** argv)
@@ -265,7 +307,7 @@ int main(int argc, char** argv)
 
 	/*注册回调函数*/
 	// 设置键盘按键的回调函数
-	//glutKeyboardFunc(KeyPressFunc);
+	glutKeyboardFunc(KeyPressFunc);
 	//glutSpecialFunc(SpecialKeyFunc);
 
 	// 设置窗口调整的回调函数
@@ -273,9 +315,6 @@ int main(int argc, char** argv)
 
 	// 设置显示回调函数
 	glutDisplayFunc(Display);
-
-	// 设置定时器
-	//glutTimerFunc(100, myTimer, 0);
 
 	// 自定义的初始化函数
 	// 通常将shader初始化和在程序运行过程中保持不变的属性的设置放在此函数中
