@@ -26,10 +26,13 @@ typedef struct materialStruct {
 point3* sphere;			// 存放一个球的顶点坐标数据的指针
 GLsizei NumVertices;	// 球的顶点数
 
+float RotateAngle = 0.0f;		// 绕y轴旋转的角度
+float AngleStepSize = 10.0f;
+
 GLuint vPosition;	// Shader 中 in 变量 vPosition 的索引
 GLuint vNormal;		// Shader 中 vNormal 的索引
-GLuint MVPMatrix;	// Shader 中 uniform 变量 MVPMatrix 的索引
-GLuint ModelMatrix;	// Shader 中 uniform 变量 ModelMatrix 的索引
+GLuint PMatrix;	// Shader 中 uniform 变量 PMatrix 的索引
+GLuint MVMatrix;	// Shader 中 uniform 变量 MVMatrix 的索引
 GLuint LigithPos;	// Shader 中 uniform 变量 LigithPos 的索引
 GLuint ViewPos;	// Shader 中 uniform 变量 ViewPos 的索引
 GLuint blinn;		// Shader 中 uniform 变量 blinn 的索引
@@ -50,6 +53,9 @@ lightingStruct whiteLight = {
 // 光源位置
 vec3 lightPos = vec3(2.4f, 2.0f, 4.0f);
 vec3 viewPos = vec3(0.0f, 0.0f, -15.0f);
+
+
+MatrixStack matStack;
 
 // 用于生成一个中心在原点的球的顶点坐标数据(南北极在z轴方向)
 // 返回值为球的顶点数，参数为球的半径及经线和纬线数
@@ -199,8 +205,8 @@ void Init(void)
 	InitSphere(NumVertices);
 
 	// 获取shader中uniform变量的索引
-	MVPMatrix = glGetUniformLocation(program, "MVPMatrix");
-	ModelMatrix = glGetUniformLocation(program, "ModelMatrix");
+	PMatrix = glGetUniformLocation(program, "PMatrix");
+	MVMatrix = glGetUniformLocation(program, "MVMatrix");
 	LigithPos = glGetUniformLocation(program, "LigithPos");
 	ViewPos = glGetUniformLocation(program, "ViewPos");
 	blinn = glGetUniformLocation(program, "blinn");
@@ -208,7 +214,7 @@ void Init(void)
 	// 获取shader中uniform变量"uColor"的索引
 	//uColor = glGetUniformLocation(program, "uColor");
 
-	glClearColor(1.0, 1.0, 1.0, 0.0);		// 背景为白色			
+	glClearColor(0.5, 0.5, 0.5, 0.0);		// 背景为白色			
 	glEnable(GL_DEPTH_TEST);				// 开启深度检测
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	// 线框模式
@@ -234,25 +240,43 @@ void Display(void)
 {
 	// 用背景色清空颜色缓存，将深度缓存恢复为初始值
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	mat4 mv;
 
-	// 定义模视矩阵，默认初始化为恒等矩阵
-	mat4 view;
-	mat4 modele;
+	mv *= Translate(viewPos) * RotateY(RotateAngle); // 构建 View Matrix
 
-	// 向负z轴方向平移15个单位
-	view *= Translate(viewPos);
-
-	modele *= Rotate(90, 1.0f, 0.0f, 0.0f);
-
-	//glBindVertexArray(vaoSphere);
-	glUniformMatrix4fv(ModelMatrix, 1, GL_TRUE, modele);
-	glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * view * modele); // 传模视投影矩阵
-
-	glUniform3f(LigithPos, lightPos.x, lightPos.y, lightPos.z);
-	glUniform3f(ViewPos, viewPos.x, viewPos.y, viewPos.z);
-	//glUniform3f(ViewPos, 0, 0, 10);
-
+	matStack.push(mv);
+	mv *= Rotate(90, 1.0f, 0.0f, 0.0f);
+	glUniformMatrix4fv(MVMatrix, 1, GL_TRUE, mv);
+	glUniformMatrix4fv(PMatrix, 1, GL_TRUE, proj); // 传模视投影矩阵
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+	mv = matStack.pop();
+
+	vec4 mvLightPos = mv * lightPos;
+	std::cout << "mvLightPos " << mvLightPos << std::endl;
+	glUniform3f(LigithPos, mvLightPos.x, mvLightPos.y, mvLightPos.z);
+
+	glUniform3f(ViewPos, 0, 0, 0);
+
+	//// 定义模视矩阵，默认初始化为恒等矩阵
+	//mat4 view;
+	//mat4 modele;
+
+	//// 向负z轴方向平移15个单位
+	//view *= Translate(viewPos);
+
+	//modele *= Rotate(90, 1.0f, 0.0f, 0.0f);
+
+	////glBindVertexArray(vaoSphere);
+	//glUniformMatrix4fv(ModelMatrix, 1, GL_TRUE, modele);
+	//glUniformMatrix4fv(MVPMatrix, 1, GL_TRUE, proj * view * modele); // 传模视投影矩阵
+
+	//glUniform3f(LigithPos, lightPos.x, lightPos.y, lightPos.z);
+
+	////vec3 mvPos = viewPos * view;
+	//glUniform3f(ViewPos, viewPos.x, viewPos.y, viewPos.z);
+	////glUniform3f(ViewPos, 0, 0, 10);
+
+	//glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 
 
 	glutSwapBuffers();					// 交换缓存
@@ -274,6 +298,32 @@ void KeyPressFunc(unsigned char Key, int x, int y)
 		break;
 	}
 }
+
+/*glutSpecialFunc设置以下函数用于处理“特殊”按键事件*/
+void SpecialKeyFunc(int key, int x, int y)
+{
+	switch (key)
+	{
+	case GLUT_KEY_LEFT:
+		RotateAngle += AngleStepSize;
+		if (RotateAngle > 180.0f)
+		{
+			RotateAngle -= 360.0f;
+		}
+		break;
+	case GLUT_KEY_RIGHT:
+		RotateAngle -= AngleStepSize;
+		if (RotateAngle < -180.0f)
+		{
+			RotateAngle += 360.0f;
+		}
+		break;
+	}
+
+	glutPostRedisplay();
+}
+
+
 
 int main(int argc, char** argv)
 {
@@ -308,7 +358,7 @@ int main(int argc, char** argv)
 	/*注册回调函数*/
 	// 设置键盘按键的回调函数
 	glutKeyboardFunc(KeyPressFunc);
-	//glutSpecialFunc(SpecialKeyFunc);
+	glutSpecialFunc(SpecialKeyFunc);
 
 	// 设置窗口调整的回调函数
 	glutReshapeFunc(ResizeWindow);

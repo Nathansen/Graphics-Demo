@@ -24,7 +24,7 @@ void main()
     vec3 diffuse = diff * color;
     // specular
     vec3 viewDir = normalize(ViewPos - fs_in.FragPos);
-    vec3 reflectDir = reflect(-lightDir, normal);
+//    vec3 reflectDir = reflect(-lightDir, normal);
     float spec = 0.0;
     if(blinn)
     {
@@ -36,8 +36,8 @@ void main()
         vec3 reflectDir = reflect(-lightDir, normal);
         spec = pow(max(dot(viewDir, reflectDir), 0.0), 8.0);
     }
-    vec3 specular = vec3(0.3) * spec; // assuming bright white light color
+    vec3 specular = vec3(0.5) * spec; // assuming bright white light color
     FragColor = vec4(ambient + diffuse + specular, 1.0);
 
-    //FragColor =  vec4(fs_in.Normal.x, fs_in.Normal.y, fs_in.Normal.z, 1);
+//    FragColor =  vec4( abs(fs_in.Normal.x), abs(fs_in.Normal.y), abs(fs_in.Normal.z), 1);
 }
