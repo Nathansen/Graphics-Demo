@@ -32,6 +32,9 @@
     <ClInclude Include="vec.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="MovingCamera.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="fShader.glsl">
