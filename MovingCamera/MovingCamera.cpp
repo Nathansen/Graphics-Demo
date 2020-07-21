@@ -5,16 +5,22 @@
 //------------------------------------------------------------------------------
 
 #include "Angel.h"
-#include "MovingCamera.h"
 
 const int NUM_SPHERES = 50;
+const float MIN_POS = -20.f;
+const float MAX_POS = 20.f;
 
 typedef vec3 point3;
 
 MatrixStack MVPStack;		// 模视投影矩阵栈
 mat4 matProj;	// 投影矩阵
 mat4 matCamera; // 相机变换矩阵
-mat4 matReverse; // 相机变换逆矩阵
+
+// 在每次 matCamera 左乘一个最新变换的时候
+// matReverse都右乘一个最新变换的逆变换
+// 这样可保证matReverse始终都是matCamera的逆矩阵
+// 当前照相机在世界坐标系下的位置就是(matReverse[0][3], matReverse[1][3], matReverse[2][3])
+mat4 matReverse; // 相机变换逆矩阵 用于计算相机位置
 
 /*shader中变量索引*/
 GLuint vPosition;  // shader中in变量vPosition的索引
@@ -40,6 +46,9 @@ point3* ptTorus;
 GLuint numVerticesTorus;
 GLuint vaoTorus;
 
+enum { UP, DOWN, LEFT, RIGHT, NUM_KEY };
+bool KeyDown[NUM_KEY];
+
 // 构建 y = 0 且中心为原点平面
 // fExtent 地面范围
 // fStep 间隔
@@ -59,7 +68,7 @@ void BuildGround(GLfloat fExtent, GLfloat fStep)
 
 void InitGround()
 {
-	BuildGround(20.0, 1.0);
+	BuildGround(MAX_POS, 1.0);
 
 	glGenVertexArrays(1, &vaoGround);
 	glBindVertexArray(vaoGround);
@@ -193,7 +202,7 @@ void InitSphere()
 void BuildTorus(GLfloat majorRadius, GLfloat minorRadius, GLint numMajor, GLint numMinor)
 {
 	if (ptTorus)
-		delete ptTorus;	// 如果ptTorus已经有数据，先回收
+		delete[] ptTorus;	// 如果ptTorus已经有数据，先回收
 	numVerticesTorus = numMajor * numMinor * 6; // 顶点数
 	ptTorus = new point3[numVerticesTorus];
 
@@ -287,12 +296,78 @@ void Init()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA); // 设置为混合模式
 }
 
+void SetLegalPos()
+{
+	// 相机移动范围 [-20, 20]
+	if (matReverse[0][3] < MIN_POS)
+	{
+		float deltaX = MIN_POS - matReverse[0][3];
+		matCamera = Translate(-deltaX, 0.0, 0.0) * matCamera;
+		matReverse *= Translate(deltaX, 0.0, 0.0);
+	}
+
+	if (matReverse[0][3] > MAX_POS)
+	{
+		float deltaX = MAX_POS - matReverse[0][3];
+		matCamera = Translate(-deltaX, 0.0, 0.0) * matCamera;
+		matReverse *= Translate(deltaX, 0.0, 0.0);
+	}
+
+	if (matReverse[2][3] < MIN_POS)
+	{
+		float deltaX = MIN_POS - matReverse[2][3];
+		matCamera = Translate(0.0, 0.0, -deltaX) * matCamera;
+		matReverse *= Translate(0.0, 0.0, deltaX);
+	}
+
+	if (matReverse[2][3] > MAX_POS)
+	{
+		float deltaX = MAX_POS - matReverse[2][3];
+		matCamera = Translate(0.0, 0.0, -deltaX) * matCamera;
+		matReverse *= Translate(0.0, 0.0, deltaX);
+	}
+}
+
+void UpdateCamera()
+{
+	// 在每次 matCamera 左乘一个最新变换的时候
+	// matReverse 都右乘一个最新变换的逆变换
+	// 这样可保证matReverse始终都是 matCamera 的逆矩阵
+	// 当前照相机在世界坐标系下的位置就是(matReverse[0][3], matReverse[1][3], matReverse[2][3])
+	if (KeyDown[UP])
+	{
+		matCamera = Translate(0.0, 0.0, 0.1) * matCamera;
+		matReverse *= Translate(0.0, 0.0, -0.1);
+	}
+	if (KeyDown[DOWN])
+	{
+		matCamera = Translate(0.0, 0.0, -0.1) * matCamera;
+		matReverse *= Translate(0.0, 0.0, 0.1);
+	}
+	if (KeyDown[LEFT])
+	{
+		matCamera = Translate(0.1, 0.0, 0.0) * matCamera;
+		matReverse *= Translate(-0.1, 0.0, 0.0);
+	}
+	if (KeyDown[RIGHT])
+	{
+		matCamera = Translate(-0.1, 0.0, 0.0) * matCamera;
+		matReverse *= Translate(0.1, 0.0, 0.0);
+	}
+
+	SetLegalPos();
+
+	glutPostRedisplay();
+}
+
 // 显示回调函数
 void RenderScene()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	mat4 matMVP = matProj;
+	UpdateCamera();
+
+	mat4 matMVP = matProj * matCamera;
 
 	// 绘制地面
 	MVPStack.push(matMVP);
@@ -349,18 +424,89 @@ void ChangeSize(int w, int h)
 	matProj = Perspective(35.0f, fAspect, 1.0f, 50.0f);
 }
 
-//void MyKeyDown(unsigned char key, int x, int y)
-//{
-//	switch (key)
-//	{
-//	case 'w':
-//	case 'W':
-//		KeyDown[UP] = GL_TRUE;
-//		break;
-//	default:
-//		break;
-//	}
-//}
+void MyKeyDown(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+	case 'w':
+	case 'W':
+		KeyDown[UP] = GL_TRUE;
+		break;
+	case 's':
+	case 'S':
+		KeyDown[DOWN] = GL_TRUE;
+		break;
+	case 'a':
+	case 'A':
+		KeyDown[LEFT] = GL_TRUE;
+		break;
+	case 'd':
+	case 'D':
+		KeyDown[RIGHT] = GL_TRUE;
+		break;
+	default:
+		break;
+	}
+
+	SetLegalPos();
+
+	glutPostRedisplay();
+}
+
+void MyKeyUp(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+	case 'w':
+	case 'W':
+		KeyDown[UP] = GL_FALSE;
+		break;
+	case 's':
+	case 'S':
+		KeyDown[DOWN] = GL_FALSE;
+		break;
+	case 'a':
+	case 'A':
+		KeyDown[LEFT] = GL_FALSE;
+		break;
+	case 'd':
+	case 'D':
+		KeyDown[RIGHT] = GL_FALSE;
+		break;
+	default:
+		break;
+	}
+
+	glutPostRedisplay();
+}
+
+void SpecialKeys(int key, int x, int y)
+{
+	// 在每次 matCamera 左乘一个最新变换的时候
+	// matReverse都右乘一个最新变换的逆变换
+	// 这样可保证 matReverse 始终都是 matCamera 的逆矩阵
+	// 当前照相机在世界坐标系下的位置就是(matReverse[0][3], matReverse[1][3], matReverse[2][3])
+	switch (key)
+	{
+	case GLUT_KEY_UP:
+		matCamera = Translate(0.0, 0.0, 0.1) * matCamera;
+		matReverse *= Translate(0.0, 0.0, -0.1);
+		break;
+	case GLUT_KEY_DOWN:
+		matCamera = Translate(0.0, 0.0, -0.1) * matCamera;
+		matReverse *= Translate(0.0, 0.0, 0.1);
+		break;
+	case GLUT_KEY_LEFT:
+		matCamera = Translate(0.1, 0.0, 0.0) * matCamera;
+		matReverse *= Translate(-0.1, 0.0, 0.0);
+		break;
+	case GLUT_KEY_RIGHT:
+		matCamera = Translate(-0.1, 0.0, 0.0) * matCamera;
+		matReverse *= Translate(0.1, 0.0, 0.0);
+		break;
+	}
+	glutPostRedisplay();
+}
 
 void TimerFunction(int value)
 {
@@ -403,6 +549,11 @@ int main(int argc, char* argv[])
 	/*注册回调函数*/
 	glutReshapeFunc(ChangeSize);
 	glutDisplayFunc(RenderScene);
+
+	glutSpecialFunc(SpecialKeys);
+	glutKeyboardFunc(MyKeyDown);
+	glutKeyboardUpFunc(MyKeyUp);
+
 	glutTimerFunc(100, TimerFunction, 0);
 	Init();  // 初始化函数
 
