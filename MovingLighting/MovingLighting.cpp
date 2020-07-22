@@ -142,7 +142,7 @@ void BuildGround(GLfloat fExtent, GLfloat fStep)
 	nGround = new vec3[numVerticesGround];
 	vec3 defaultNormal = vec3(0.0, 1.0, 0.0); // 默认向上
 	int index = 0;
-	for (GLint x = -fExtent; x <= fExtent; x += fStep)
+	for (GLint x = -fExtent; x < fExtent; x += fStep)
 	{
 		for (GLint z = fExtent; z > -fExtent; z -= fStep)
 		{
@@ -617,6 +617,7 @@ void ChangeSize(int w, int h)
 
 	// 设置透视投影视域体
 	matProj = Perspective(35.0f, fAspect, 1.0f, 50.0f);
+	glUniformMatrix4fv(Projection, 1, GL_TRUE, matProj);
 }
 
 void MyKeyDown(unsigned char key, int x, int y)
