@@ -4,6 +4,14 @@
 //		Use, modificationand distribution are subject to the "MIT License"
 //------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+//	用于演示相机变换
+//	使用说明：
+//	按 方向键 控制镜头逐步移动
+//	按 W、S、A、D 键 控制镜头移动
+//	按 ESC 键 退出
+//------------------------------------------------------------------------------
+
 #include "Angel.h"
 
 const int NUM_SPHERES = 50;
@@ -443,6 +451,9 @@ void MyKeyDown(unsigned char key, int x, int y)
 	case 'd':
 	case 'D':
 		KeyDown[RIGHT] = GL_TRUE;
+		break;
+	case 27:	// Esc键
+		exit(EXIT_SUCCESS);
 		break;
 	default:
 		break;
