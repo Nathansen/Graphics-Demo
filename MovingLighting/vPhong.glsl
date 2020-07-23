@@ -1,4 +1,4 @@
-﻿#version 140 
+﻿#version 140
 
 const int LightNum = 3; // 光源数量
 

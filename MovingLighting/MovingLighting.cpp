@@ -4,6 +4,16 @@
 //		Use, modificationand distribution are subject to the "MIT License"
 //------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+//	用于演示移动中的光照
+//	使用说明：
+//	按 1、2、3 分别控制 三个光源的 开启和关闭
+//	按 方向键 控制镜头逐步移动
+//	按 W、S、A、D 键 控制镜头移动
+//	按 L 键 切换 线框模式 和 非线框模式
+//	按 ESC 键 退出
+//------------------------------------------------------------------------------
+
 #include "Angel.h"
 
 const int NUM_SPHERES = 50;
@@ -39,15 +49,15 @@ lightingStruct whileLight =
 lightingStruct redLight =
 {
 	color4(0.2, 0.0, 0.0, 1.0),
-	color4(1.0, 1.0, 1.0, 1.0),
-	color4(1.0, 1.0, 1.0, 1.0)
+	color4(1.0, 0.0, 0.0, 1.0),
+	color4(1.0, 0.0, 0.0, 1.0)
 };
 
 lightingStruct yellowLight =
 {
-	color4(0.2, 0.0, 0.0, 1.0),
-	color4(1.0, 1.0, 1.0, 1.0),
-	color4(1.0, 1.0, 1.0, 1.0)
+	color4(0.0, 0.0, 0.0, 1.0),
+	color4(1.0, 1.0, 0.0, 1.0),
+	color4(1.0, 1.0, 0.0, 1.0)
 };
 
 lightingStruct Lights[] =
@@ -56,6 +66,8 @@ lightingStruct Lights[] =
 	redLight,
 	yellowLight
 };
+
+bool arrLightOn[3]; // 3 个光源
 
 MatrixStack MVPStack;		// 模视投影矩阵栈
 mat4 matProj;	// 投影矩阵
@@ -72,12 +84,13 @@ GLuint vPosition;  // shader中in变量vPosition的索引
 GLuint vNormal;
 GLuint ModelView; // shader中uniform变量 ModelView 的索引
 GLuint Projection;  // shader中uniform变量 Projection 的索引
-GLuint AmbienProduct;
+GLuint AmbientProduct;
 GLuint DiffuseProduct;
 GLuint SpecularProduct;
 GLuint Shininess;
 GLuint Emission;
 GLuint LightPosition;
+GLuint LightOn;
 
 bool bUseLine = false; // 使用线框模式
 
@@ -96,7 +109,7 @@ materialStruct materialGround =
 	10
 };
 
-materialStruct redLightMaterial =
+materialStruct materialRedLight =
 {
 	color4(0.1, 0.1, 0.1, 1.0),
 	color4(0.2, 0.2, 0.2, 1.0),
@@ -436,12 +449,13 @@ void Init()
 	// 获取shader中uniform变量"Projection"的索引
 	Projection = glGetUniformLocation(program, "Projection");
 
-	AmbienProduct = glGetUniformLocation(program, "AmbienProduct");
+	AmbientProduct = glGetUniformLocation(program, "AmbientProduct");
 	DiffuseProduct = glGetUniformLocation(program, "DiffuseProduct");
 	SpecularProduct = glGetUniformLocation(program, "SpecularProduct");
 	Shininess = glGetUniformLocation(program, "Shininess");
 	Emission = glGetUniformLocation(program, "Emission");
 	LightPosition = glGetUniformLocation(program, "LightPosition");
+	LightOn = glGetUniformLocation(program, "LightOn");
 
 	// 设置手电筒位置
 	glUniform4fv(LightPosition + 2, 1, vec4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -473,7 +487,7 @@ void SetMaterial(const int lightNum, const materialStruct& material, const light
 {
 	for (int i = 0; i < lightNum; i++)
 	{
-		glUniform4fv(AmbienProduct + i, 1, material.ambient * light[i].ambient);
+		glUniform4fv(AmbientProduct + i, 1, material.ambient * light[i].ambient);
 		glUniform4fv(DiffuseProduct + i, 1, material.diffuse * light[i].diffuse);
 		glUniform4fv(SpecularProduct + i, 1, material.specular * light[i].specular);
 	}
@@ -568,9 +582,17 @@ void RenderScene()
 	glDrawArrays(GL_TRIANGLES, 0, numVerticesGround);
 	matModelView = MVPStack.pop();
 
+	// 圆环
+	MVPStack.push(matModelView);
+	matModelView *= Translate(0.0, 0.1, -2.5f);
+	matModelView *= Rotate(-yRot, 0.0f, 1.0f, 0.0f);
+	glBindVertexArray(vaoTorus);
+	glUniformMatrix4fv(ModelView, 1, GL_TRUE, matModelView);
+	glDrawArrays(GL_TRIANGLES, 0, numVerticesTorus);
+	matModelView = MVPStack.pop();
+
 	// 绘制球
 	glBindVertexArray(vaoSphere);
-	//SetMaterial(3, sh, Lights);
 	for (int iSphere = 0; iSphere < NUM_SPHERES; iSphere++)
 	{
 		MVPStack.push(matModelView);
@@ -584,6 +606,10 @@ void RenderScene()
 	matModelView *= Translate(0.0, 0.0, -2.5f);
 	// 旋转的球
 	MVPStack.push(matModelView);
+	if (arrLightOn[1])
+	{
+		SetMaterial(3, materialRedLight, Lights);
+	}
 	matModelView *= Rotate(yRot, 0.0f, 1.0f, 0.0f);
 	matModelView *= Translate(1.0, 0.0f, 0.0f);
 	// 设置第二个光源位置
@@ -593,12 +619,6 @@ void RenderScene()
 	glUniformMatrix4fv(ModelView, 1, GL_TRUE, matModelView);
 	glDrawArrays(GL_TRIANGLES, 0, numVerticesSphere);
 	matModelView = MVPStack.pop();
-
-	// 圆环
-	matModelView *= Rotate(-yRot, 0.0f, 1.0f, 0.0f);
-	glBindVertexArray(vaoTorus);
-	glUniformMatrix4fv(ModelView, 1, GL_TRUE, matModelView);
-	glDrawArrays(GL_TRIANGLES, 0, numVerticesTorus);
 
 	// 交换缓存
 	glutSwapBuffers();
@@ -642,7 +662,7 @@ void MyKeyDown(unsigned char key, int x, int y)
 		break;
 	case 'l':
 	case 'L':
-		bUseLine != bUseLine;
+		bUseLine = !bUseLine;
 		// 切换线框 与 填充模式
 		if (bUseLine)
 		{
@@ -652,6 +672,21 @@ void MyKeyDown(unsigned char key, int x, int y)
 		{
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
+		break;
+	case '1':
+		arrLightOn[0] = !arrLightOn[0];
+		glUniform1i(LightOn, arrLightOn[0]);
+		break;
+	case '2':
+		arrLightOn[1] = !arrLightOn[1];
+		glUniform1i(LightOn + 1, arrLightOn[1]);
+		break;
+	case '3':
+		arrLightOn[2] = !arrLightOn[2];
+		glUniform1i(LightOn + 2, arrLightOn[2]);
+		break;
+	case 27:	// Esc键
+		exit(EXIT_SUCCESS);
 		break;
 	default:
 		break;
@@ -742,7 +777,7 @@ int main(int argc, char* argv[])
 	// 如程序中使用了弃用函数则注释掉本行
 	glutInitContextFlags(GLUT_FORWARD_COMPATIBLE);
 
-	glutCreateWindow("Moving Camera");
+	glutCreateWindow("Moving Lighting");
 
 	// 显卡驱动非正式发布版或者与glew库规范不兼容时加上此行
 	// 如果在glGenVertexArrays处发生Access Violation则加上此行

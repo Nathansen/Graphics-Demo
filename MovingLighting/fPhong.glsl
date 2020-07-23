@@ -1,4 +1,4 @@
-﻿#version 330 core
+﻿#version 140
 const int LightNum = 3; // 光源数量
 
 in vec3 fN;	// 法向(观察坐标系)
@@ -29,65 +29,76 @@ out vec4 fragColor;		 // 输出片元颜色
 void main()
 {
 	if(bOnlyTexture)
+	{
 		fragColor = texture2D(tex, texCoord);
-	else{
-			// 归一化输入的向量
-	vec3 N = normalize(fN);
-	vec3 E = normalize(fE);
+	}
+	else
+	{
+		// 归一化输入的向量
+		vec3 N = normalize(fN);
+		vec3 E = normalize(fE);
 		
-	vec4 specular = vec4(0.0, 0.0, 0.0, 0.0); //镜面光分量
+		vec4 specular = vec4(0.0, 0.0, 0.0, 0.0); //镜面光分量
 		
-	fragColor = vec4(0.0, 0.0, 0.0, 0.0); // 初始为0，针对ATI显卡
-	for(int i = 0; i < LightNum; i++){	
-		if(!LightOn[i]) continue; // 光源关闭，则不计算该光源的贡献
+		fragColor = vec4(0.0, 0.0, 0.0, 0.0); // 初始为0，针对ATI显卡
+		for(int i = 0; i < LightNum; i++)
+		{	
+			if(!LightOn[i]) continue; // 光源关闭，则不计算该光源的贡献
 			
-		vec3 L = normalize(fL[i]); // 光源方向向量(从顶点指向光源)
+			vec3 L = normalize(fL[i]); // 光源方向向量(从顶点指向光源)
 			
-		float KSpot = 1.0;	// 受聚光灯影响的衰减系数(1.0即不衰减)
-		if(i == 2){
-			// 对照射方向归一化并反向(因为L也是从顶点指向光源)
-			vec3 spotDir = -normalize(SpotDirection); 
-			float cutoff = radians(SpotCutOff); // 角度转弧度
-			float c = dot(L, spotDir);	// 偏离角的cos值
-			if( c < cos(cutoff)) // 偏离角度超过截止角
-				KSpot = 0.0;	// 完全衰减
-			else {// 强度衰减正比于c^f
-				// d为随距离衰减公式的分母
-				float d = 1.0 + 0.5 * dist; 
-				KSpot = max(pow(c, SpotExponent), 0) / d;
+			float KSpot = 1.0;	// 受聚光灯影响的衰减系数(1.0即不衰减)
+			if(i == 2)
+			{
+				// 对照射方向归一化并反向(因为L也是从顶点指向光源)
+				vec3 spotDir = -normalize(SpotDirection); 
+				float cutoff = radians(SpotCutOff); // 角度转弧度
+				float c = dot(L, spotDir);	// 偏离角的cos值
+				if( c < cos(cutoff)) // 偏离角度超过截止角
+				{
+					KSpot = 0.0;	// 完全衰减
+				}
+				else 
+				{
+					// 强度衰减正比于c^f
+					// d为随距离衰减公式的分母
+					float d = 1.0 + 0.5 * dist; 
+					KSpot = max(pow(c, SpotExponent), 0) / d;
+				}
 			}
-		}
 			
-		vec3 H = normalize( L + E );	// 半角向量
+			vec3 H = normalize( L + E );	// 半角向量
 
-		// 环境反射分量
-		vec4 ambient = AmbientProduct[i];
+			// 环境反射分量
+			vec4 ambient = AmbientProduct[i];
 
-		// 漫反射分量
-		float Kd = max( dot(L, N), 0.0 );
-		vec4 diffuse = KSpot * Kd * DiffuseProduct[i];
+			// 漫反射分量
+			float Kd = max( dot(L, N), 0.0 );
+			vec4 diffuse = KSpot * Kd * DiffuseProduct[i];
 		
-			// 镜面反射分量
-			//vec4 specular;
-			//if( Kd == 0 ) {  // 即dot(L, N) <= 0
-			//	specular = vec4(0.0, 0.0, 0.0, 1.0);
-			//} 
-			//else{
-			//	float Ks = pow( max(dot(N, H), 0.0), Shininess );
-			//	specular = KSpot * Ks * SpecularProduct[i];
-			//}
-			// 镜面反射分量
-		if( Kd != 0 ) {  // 即dot(L, N) > 0
-			float Ks = pow( max(dot(N, H), 0.0), Shininess );
-			specular += KSpot * Ks * SpecularProduct[i]; // 镜面分量单独累加
-		} 
+				// 镜面反射分量
+				//vec4 specular;
+				//if( Kd == 0 ) {  // 即dot(L, N) <= 0
+				//	specular = vec4(0.0, 0.0, 0.0, 1.0);
+				//} 
+				//else{
+				//	float Ks = pow( max(dot(N, H), 0.0), Shininess );
+				//	specular = KSpot * Ks * SpecularProduct[i];
+				//}
+				// 镜面反射分量
+			if( Kd != 0 ) 
+			{  // 即dot(L, N) > 0
+				float Ks = pow( max(dot(N, H), 0.0), Shininess );
+				specular += KSpot * Ks * SpecularProduct[i]; // 镜面分量单独累加
+			} 
 
 		// 得到最终颜色(不包含镜面光)
 		fragColor += ambient + diffuse; 
 	}
 		
-	fragColor += Emission;	// 加上物体自身的发射光
-		fragColor = fragColor * texture2D(tex, texCoord) + specular; // 得到最终片元颜色
+		fragColor += Emission;	// 加上物体自身的发射光
+		// 这里没有贴图 不计算贴图颜色	
+		// fragColor = fragColor * texture2D(tex, texCoord) + specular; // 得到最终片元颜色
 	
 		// 设置透明度
 		fragColor.a = (AmbientProduct[0].a + DiffuseProduct[0].a + SpecularProduct[0].a) / 3;
