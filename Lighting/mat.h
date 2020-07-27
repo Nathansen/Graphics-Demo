@@ -454,7 +454,11 @@ namespace Angel
 
 		mat4(const GLfloat d = GLfloat(1.0))  // Create a diagional matrix
 		{
-			_m[0].x = d;  _m[1].y = d;  _m[2].z = d;  _m[3].w = d;
+			//_m[0].x = d;  _m[1].y = d;  _m[2].z = d;  _m[3].w = d;
+			_m[0] = vec4(d, 0.0, 0.0, 0.0);
+			_m[1] = vec4(0.0, d, 0.0, 0.0);
+			_m[2] = vec4(0.0, 0.0, d, 0.0);
+			_m[3] = vec4(0.0, 0.0, 0.0, d);
 		}
 
 		mat4(const vec4& a, const vec4& b, const vec4& c, const vec4& d)

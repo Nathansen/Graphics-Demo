@@ -1,30 +1,34 @@
-﻿#version 330 core
+﻿//#version 330 core
+#version 140
 
 out vec4 FragColor;
 
-in VS_OUT {
-    vec3 FragPos;
-    vec3 Normal;
-    vec3 Color;
-} fs_in;
+in vec3 FragPos;
+in vec3 Normal;
+in vec3 Color;
 
 uniform vec3 LightPos;
 uniform vec3 ViewPos;
 uniform bool blinn;
 
+uniform bool bAmbieni;
+uniform bool bDiffuse;
+uniform bool bSpecular;
+
 void main()
 {    
-    vec3 color = fs_in.Color;
+    vec3 color = Color;
     // ambient
     vec3 ambient = 0.6 * color;
     // diffuse
-    vec3 lightDir = normalize(LightPos - fs_in.FragPos);
-    vec3 normal = normalize(fs_in.Normal);
+    vec3 lightDir = normalize(LightPos - FragPos);
+    vec3 normal = normalize(Normal);
     float diff = max(dot(lightDir, normal), 0.0);
+//    vec3 diffuse = diff * color;
     vec3 diffuse = diff * color;
     // specular
-    vec3 viewDir = normalize(ViewPos - fs_in.FragPos);
-//    vec3 reflectDir = reflect(-lightDir, normal);
+    vec3 viewDir = normalize(ViewPos - FragPos);
+    // vec3 reflectDir = reflect(-lightDir, normal);
     float spec = 0.0;
     if(blinn)
     {
@@ -36,8 +40,28 @@ void main()
         vec3 reflectDir = reflect(-lightDir, normal);
         spec = pow(max(dot(viewDir, reflectDir), 0.0), 8.0);
     }
-    vec3 specular = vec3(0.5) * spec; // assuming bright white light color
-    FragColor = vec4(ambient + diffuse + specular, 1.0);
 
-//    FragColor =  vec4( abs(fs_in.Normal.x), abs(fs_in.Normal.y), abs(fs_in.Normal.z), 1);
+    vec3 specular = vec3(0.5) * spec; // assuming bright white light color
+    
+    FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+
+    if(bAmbieni)
+    {
+        FragColor.xyz += ambient;
+    }
+
+    if(bDiffuse)
+    {
+        FragColor.xyz += diffuse;
+    }
+
+    if(bSpecular)
+    {
+        FragColor.xyz += specular;
+    }
+
+//    FragColor = vec4(ambient + diffuse + specular, 1.0);
+
+//    FragColor =  vec4(lightDir.x, lightDir.y, lightDir.z, 1);
+//    FragColor =  vec4(normal.x, normal.y, normal.z, 1);
 }
