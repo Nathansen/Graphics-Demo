@@ -157,9 +157,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="fPhong.glsl" />
-    <None Include="fPhongTest.glsl" />
+    <None Include="fLight.glsl" />
     <None Include="vPhong.glsl" />
-    <None Include="vPhongTest.glsl" />
+    <None Include="vLight.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

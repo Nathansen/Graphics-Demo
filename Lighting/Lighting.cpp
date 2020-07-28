@@ -9,38 +9,28 @@
 typedef vec3 point3;
 typedef vec4 color4;
 
-//typedef struct lightingStruct {
-//	color4 ambient;
-//	color4 diffuse;
-//	color4 specular;
-//}lightingStruct;
-
-//typedef struct materialStruct {
-//	color4 ambient;		// 环境反射系数
-//	color4 diffuse;		// 漫反射系数
-//	color4 specular;	// 镜面反射系数
-//	color4 emission;	// 发射光
-//	GLfloat shininess;	// 高光系数
-//}materialStruct;
-
 point3* sphere;			// 存放一个球的顶点坐标数据的指针
 GLsizei NumVertices;	// 球的顶点数
 
 float RotateAngle = 0.0f;		// 绕y轴旋转的角度
 float AngleStepSize = 10.0f;
 
-GLuint vPosition;	// Shader 中 in 变量 vPosition 的索引
-GLuint vNormal;		// Shader 中 vNormal 的索引
-GLuint PMatrix;	// Shader 中 uniform 变量 PMatrix 的索引
-GLuint MVMatrix;	// Shader 中 uniform 变量 MVMatrix 的索引
-GLuint LigithPos;	// Shader 中 uniform 变量 LigithPos 的索引
-GLuint ViewPos;	// Shader 中 uniform 变量 ViewPos 的索引
-GLuint blinn;		// Shader 中 uniform 变量 blinn 的索引
-GLuint bAmbieni; // 使用环境光
-GLuint bDiffuse; // 使用漫反射
-GLuint bSpecular; // 使用 高光
+GLuint programPhong;	// Phong Shader
+GLuint vPosition;		// Phong Shader 中 in 变量 vPosition 的索引
+GLuint vNormal;			// Phong Shader 中 vNormal 的索引
+GLuint PMatrix;			// Phong Shader 中 uniform 变量 PMatrix 的索引
+GLuint MVMatrix;		// Phong Shader 中 uniform 变量 MVMatrix 的索引
+GLuint LightPos;		// Phong Shader 中 uniform 变量 LightPos 的索引
+GLuint ViewPos;			// Phong Shader 中 uniform 变量 ViewPos 的索引
+GLuint blinn;			// Phong Shader 中 uniform 变量 blinn 的索引
+GLuint bAmbieni;		// 使用环境光
+GLuint bDiffuse;		// 使用漫反射
+GLuint bSpecular;		// 使用 高光
 
-GLuint uColor;		// Shader 中 uniform 变量 uColor 的索引
+//GLuint programLight;	// Light Shader
+//GLuint vPositionLight;	// Light Shader 中 in 变量 vPosition 的索引
+//GLuint PMatrixLight;	// Light Shader 中 uniform 变量 PMatrix 的索引
+//GLuint MVMatrixLight;	// Light Shader 中 uniform 变量 MVMatrix 的索引
 
 mat4 proj;	// 投影矩阵
 
@@ -50,17 +40,8 @@ bool useAmbieni; // 使用环境光
 bool useDiffuse; // 使用漫反射
 bool useSpecular; // 使用 高光
 
-//环境光1
-//lightingStruct whiteLight = {
-//	color4(0.2, 0.2, 0.2, 1.0),
-//	color4(1.0, 1.0, 1.0, 1.0),
-//	color4(1.0, 1.0, 1.0, 1.0)
-//};
-
 // 光源位置
-vec3 lightPos = vec3(2.0f, 2.0f, 4.0f);
-//vec3 viewPos = vec3(0.0f, 0.0f, -15.0f);
-
+vec3 lightPos = vec3(2.0f, 2.0f, 2.0);
 
 MatrixStack matStack;
 
@@ -169,54 +150,6 @@ void InitSphere(GLuint numVertices)
 		GL_FALSE,
 		0,
 		BUFFER_OFFSET(0));
-
-	///*创建一个顶点数组对象(VAO)*/
-	//glGenVertexArrays(1, &vaoSphere);  // 生成一个未用的VAO ID，存于变量vao中
-	//glBindVertexArray(vaoSphere);      // 创建id为vao的VAO，并绑定为当前VAO
-
-	///*创建并初始化一个缓冲区对象(Buffer Object)*/
-	//GLuint buffer;
-	//glGenBuffers(1, &buffer); // 生成一个未用的缓冲区对象ID，存于变量buffer中
-	//// 创建id为buffer的Array Buffer对象，并绑定为当前Array Buffer对象
-	//glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	//// 为Buffer对象在GPU端申请空间，并提供数据
-	//glBufferData(GL_ARRAY_BUFFER,	// Buffer类型
-	//	(sizeof(point3) + sizeof(vec3)) * numVertices,  // 申请空间大小(顶点 + 法线)
-	//	NULL,			 // 暂时不提供数据
-	//	GL_STATIC_DRAW	// 表明将如何使用Buffer的标志(GL_STATIC_DRAW含义是一次提供数据，多遍绘制)
-	//);
-
-	//// 填充顶点
-	//glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(point3) * numVertices, sphere);
-	//// 填充法线 球的顶点和法线数据一样 直接复用顶点
-	//glBufferSubData(GL_ARRAY_BUFFER,
-	//	sizeof(point3) * numVertices,
-	//	sizeof(vec3) * numVertices,
-	//	sphere);
-
-	//delete[] sphere; // 数据已传到 GPU，可删除顶点数据
-
-
-	//glEnableVertexAttribArray(vPosition);	// 启用顶点属性数组
-	//// 为顶点属性数组提供数据(数据存放在之前buffer对象中)
-	//glVertexAttribPointer(
-	//	vPosition,			// 属性变量索引
-	//	3,					// 每个顶点属性的分量个数
-	//	GL_FLOAT,			// 数组数据类型
-	//	GL_FALSE,			// 是否进行归一化处理
-	//	0,  // 在数组中相邻属性成员起始位置间的间隔(以字节为单位)
-	//	BUFFER_OFFSET(0)    // 第一个属性值在buffer中的偏移量
-	//);
-
-	//glEnableVertexAttribArray(vNormal);
-	//glVertexAttribPointer(
-	//	vNormal,			// 属性变量索引
-	//	3,					// 每个顶点属性的分量个数
-	//	GL_FLOAT,			// 数组数据类型
-	//	GL_FALSE,			// 是否进行归一化处理
-	//	0,  // 在数组中相邻属性成员起始位置间的间隔(以字节为单位)
-	//	BUFFER_OFFSET(sizeof(point3) * numVertices)    // 第一个属性值在buffer中的偏移量
-	//);
 }
 
 // 初始化OpenGL的状态
@@ -228,32 +161,34 @@ void Init(void)
 	/*加载shader并使用所得到的shader程序*/
 	// InitShader为InitShader.cpp中定义的函数，参数分别为顶点和片元shader的文件名
 	// 返回值为shader程序对象的ID
-	GLuint program = InitShader("vPhongTest.glsl", "fPhongTest.glsl");
-	glUseProgram(program); // 使用该shader程序
+	programPhong = InitShader("vPhong.glsl", "fPhong.glsl");
+	glUseProgram(programPhong); // 使用该shader程序
 
-	/*初始化顶点着色器中的顶点位置属性*/
-	// 获取shader程序中属性变量的位置(索引)
-	//vPosition = glGetAttribLocation(program, "vPosition");
-	//vNormal = glGetAttribLocation(program, "vNormal");
-	vPosition = glGetAttribLocation(program, "vPosition");
-	vNormal = glGetAttribLocation(program, "vNormal");
+
+	vPosition = glGetAttribLocation(programPhong, "vPosition");
+	vNormal = glGetAttribLocation(programPhong, "vNormal");
 	InitSphere(NumVertices);
 
 	// 获取shader中uniform变量的索引
-	PMatrix = glGetUniformLocation(program, "PMatrix");
-	MVMatrix = glGetUniformLocation(program, "MVMatrix");
-	LigithPos = glGetUniformLocation(program, "LigithPos");
-	ViewPos = glGetUniformLocation(program, "ViewPos");
-	blinn = glGetUniformLocation(program, "blinn");
-	bAmbieni = glGetUniformLocation(program, "bAmbieni");
-	bDiffuse = glGetUniformLocation(program, "bDiffuse");
-	bSpecular = glGetUniformLocation(program, "bSpecular");
-
-	// 获取shader中uniform变量"uColor"的索引
-	//uColor = glGetUniformLocation(program, "uColor");
+	PMatrix = glGetUniformLocation(programPhong, "PMatrix");
+	MVMatrix = glGetUniformLocation(programPhong, "MVMatrix");
+	LightPos = glGetUniformLocation(programPhong, "LightPos");
+	ViewPos = glGetUniformLocation(programPhong, "ViewPos");
+	blinn = glGetUniformLocation(programPhong, "blinn");
+	bAmbieni = glGetUniformLocation(programPhong, "bAmbieni");
+	bDiffuse = glGetUniformLocation(programPhong, "bDiffuse");
+	bSpecular = glGetUniformLocation(programPhong, "bSpecular");
 
 	glClearColor(0.5, 0.5, 0.5, 0.0);		// 背景为白色			
 	glEnable(GL_DEPTH_TEST);				// 开启深度检测
+
+
+	//programLight = InitShader("vLight.glsl", "fLight.glsl");
+	//glUseProgram(programLight); // 使用该shader程序
+
+	//vPositionLight = glGetAttribLocation(programLight, "vPosition");
+	//PMatrixLight = glGetUniformLocation(programPhong, "PMatrix");
+	//MVMatrix = glGetUniformLocation(programPhong, "MVMatrix");
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	// 线框模式
 
@@ -279,25 +214,28 @@ void Display(void)
 	// 用背景色清空颜色缓存，将深度缓存恢复为初始值
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	mat4 mv = Translate(0.0f, 0.0f, -15.0f);
-	mv *= Rotate(RotateAngle, 1.0, 0.0, 0.0);
 
 	matStack.push(mv);
 	//mv *= Translate(viewPos) * RotateY(RotateAngle); // 构建 View Matrix
 	mv *= Rotate(90, 1.0f, 0.0f, 0.0f);
+	//glUseProgram(programPhong);
 	glUniformMatrix4fv(MVMatrix, 1, GL_TRUE, mv);
 	glUniformMatrix4fv(PMatrix, 1, GL_TRUE, proj); // 传模视投影矩阵
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 	mv = matStack.pop();
 
+	mv *= Rotate(RotateAngle, 0.0, 1.0, 0.0);
 	vec4 mvLightPos = mv * lightPos;
-	glUniform3f(LigithPos, mvLightPos.x, mvLightPos.y, mvLightPos.z);
+	glUniform3f(LightPos, mvLightPos.x, mvLightPos.y, mvLightPos.z);
 
-	//mv *= Translate(lightPos.x, lightPos.y, lightPos.z);
-	//// 在光源位置绘制一个球
-	////glUniform3f(LigithPos, 0, 0, 0);
-	//glUniformMatrix4fv(MVMatrix, 1, GL_TRUE, mv * Scale(0.1, 0.1, 0.1));
-	//glUniformMatrix4fv(PMatrix, 1, GL_TRUE, proj); // 传模视投影矩阵
-	//glDrawArrays(GL_TRIANGLES, 0, NumVertices);
+	//std::cout << mvLightPos.x << " " << mvLightPos.y << " " << mvLightPos.z << std::endl;
+	mv *= Translate(lightPos.x, lightPos.y, lightPos.z);
+
+	// 在光源位置绘制一个球
+	//glUseProgram(programLight);
+	glUniformMatrix4fv(MVMatrix, 1, GL_TRUE, mv * Scale(0.1, 0.1, 0.1));
+	glUniformMatrix4fv(PMatrix, 1, GL_TRUE, proj); // 传模视投影矩阵
+	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 
 	// 观察者位于原点
 	glUniform3f(ViewPos, 0, 0, 0);
@@ -325,6 +263,7 @@ void KeyPressFunc(unsigned char Key, int x, int y)
 	case 'T':
 		useBlinnPhong = !useBlinnPhong;
 		glUniform1i(blinn, useBlinnPhong ? 1 : 0);
+		std::cout << "Use Blinn-Phong : " << useBlinnPhong << std::endl;
 		break;
 	case 'l':
 	case 'L':
