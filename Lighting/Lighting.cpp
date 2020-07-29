@@ -4,6 +4,16 @@
 //		Use, modificationand distribution are subject to the "MIT License"
 //------------------------------------------------------------------------------
 
+//------------------------------------------------------------------------------
+//	用于演示 Phong 光照模型 与 Blinn-Phong 光照模型
+//	使用说明：
+//	按 方向键 左右控制 红色光源 移动
+//  按 1、2、3 分别控制 环境光 漫反射光 和 高光 的 开启/关闭
+//	按 L 键 切换 线框模式 和 非线框模式
+//	按 T 键 切换 Phong 光照模型 和 Blinn-Phong 光照模型
+//	按 ESC 键 退出
+//------------------------------------------------------------------------------
+
 #include "Angel.h"
 
 typedef vec3 point3;
@@ -14,6 +24,9 @@ GLsizei NumVertices;	// 球的顶点数
 
 float RotateAngle = 0.0f;		// 绕y轴旋转的角度
 float AngleStepSize = 10.0f;
+
+GLuint vaoSphere;
+GLuint vaoSphereLight;
 
 GLuint programPhong;	// Phong Shader
 GLuint vPosition;		// Phong Shader 中 in 变量 vPosition 的索引
@@ -27,18 +40,18 @@ GLuint bAmbieni;		// 使用环境光
 GLuint bDiffuse;		// 使用漫反射
 GLuint bSpecular;		// 使用 高光
 
-//GLuint programLight;	// Light Shader
-//GLuint vPositionLight;	// Light Shader 中 in 变量 vPosition 的索引
-//GLuint PMatrixLight;	// Light Shader 中 uniform 变量 PMatrix 的索引
-//GLuint MVMatrixLight;	// Light Shader 中 uniform 变量 MVMatrix 的索引
+GLuint programLight;	// Light Shader
+GLuint vPositionLight;	// Light Shader 中 in 变量 vPosition 的索引
+GLuint PMatrixLight;	// Light Shader 中 uniform 变量 PMatrix 的索引
+GLuint MVMatrixLight;	// Light Shader 中 uniform 变量 MVMatrix 的索引
 
 mat4 proj;	// 投影矩阵
 
 bool useBlinnPhong = false; // Blinn-Phong
 bool useLine = false; // 线框模式
-bool useAmbieni; // 使用环境光
-bool useDiffuse; // 使用漫反射
-bool useSpecular; // 使用 高光
+bool useAmbieni = true; // 使用环境光
+bool useDiffuse = true; // 使用漫反射
+bool useSpecular = true; // 使用 高光
 
 // 光源位置
 vec3 lightPos = vec3(2.0f, 2.0f, 2.0);
@@ -121,7 +134,7 @@ GLsizei BuildSphere(GLfloat radius, GLsizei columns, GLsizei rows)
 
 void InitSphere(GLuint numVertices)
 {
-	GLuint vaoSphere;
+	glUseProgram(programPhong);
 
 	glGenVertexArrays(1, &vaoSphere);
 	glBindVertexArray(vaoSphere);
@@ -133,7 +146,6 @@ void InitSphere(GLuint numVertices)
 		sphere,
 		GL_STATIC_DRAW);
 
-	delete[] sphere;
 
 	glEnableVertexAttribArray(vPosition);
 	glVertexAttribPointer(vPosition,
@@ -150,6 +162,31 @@ void InitSphere(GLuint numVertices)
 		GL_FALSE,
 		0,
 		BUFFER_OFFSET(0));
+
+
+	glUseProgram(programLight);
+
+	glGenVertexArrays(1, &vaoSphereLight);
+	glBindVertexArray(vaoSphereLight);
+	GLuint buffSphereLight;
+	glGenBuffers(1, &buffSphereLight);
+	glBindBuffer(GL_ARRAY_BUFFER, buffSphereLight);
+	glBufferData(GL_ARRAY_BUFFER,
+		sizeof(point3) * numVertices,
+		sphere,
+		GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(vPositionLight);
+	glVertexAttribPointer(vPositionLight,
+		3,
+		GL_FLOAT,
+		GL_FALSE,
+		0,
+		BUFFER_OFFSET(0));
+
+
+	delete[] sphere;
+
 }
 
 // 初始化OpenGL的状态
@@ -167,30 +204,36 @@ void Init(void)
 
 	vPosition = glGetAttribLocation(programPhong, "vPosition");
 	vNormal = glGetAttribLocation(programPhong, "vNormal");
-	InitSphere(NumVertices);
 
 	// 获取shader中uniform变量的索引
 	PMatrix = glGetUniformLocation(programPhong, "PMatrix");
 	MVMatrix = glGetUniformLocation(programPhong, "MVMatrix");
 	LightPos = glGetUniformLocation(programPhong, "LightPos");
 	ViewPos = glGetUniformLocation(programPhong, "ViewPos");
+	// 默认使用 Phong 模型
 	blinn = glGetUniformLocation(programPhong, "blinn");
 	bAmbieni = glGetUniformLocation(programPhong, "bAmbieni");
 	bDiffuse = glGetUniformLocation(programPhong, "bDiffuse");
 	bSpecular = glGetUniformLocation(programPhong, "bSpecular");
 
-	glClearColor(0.5, 0.5, 0.5, 0.0);		// 背景为白色			
-	glEnable(GL_DEPTH_TEST);				// 开启深度检测
+	glUniform1i(bAmbieni, useAmbieni ? 1 : 0);
+	glUniform1i(bDiffuse, useDiffuse ? 1 : 0);
+	glUniform1i(bSpecular, useSpecular ? 1 : 0);
+
+	programLight = InitShader("vLight.glsl", "fLight.glsl");
+	glUseProgram(programLight); // 使用该shader程序
+
+	vPositionLight = glGetAttribLocation(programLight, "vPosition");
+	PMatrixLight = glGetUniformLocation(programLight, "PMatrix");
+	MVMatrixLight = glGetUniformLocation(programLight, "MVMatrix");
 
 
-	//programLight = InitShader("vLight.glsl", "fLight.glsl");
-	//glUseProgram(programLight); // 使用该shader程序
-
-	//vPositionLight = glGetAttribLocation(programLight, "vPosition");
-	//PMatrixLight = glGetUniformLocation(programPhong, "PMatrix");
-	//MVMatrix = glGetUniformLocation(programPhong, "MVMatrix");
+	InitSphere(NumVertices);
 
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	// 线框模式
+
+	glClearColor(0.5, 0.5, 0.5, 0.0);		// 背景为灰色			
+	glEnable(GL_DEPTH_TEST);				// 开启深度检测
 
 	glCullFace(GL_BACK);		// 剔除背面	
 	glEnable(GL_CULL_FACE);	// 开启面剔除，默认剔除背面
@@ -218,7 +261,8 @@ void Display(void)
 	matStack.push(mv);
 	//mv *= Translate(viewPos) * RotateY(RotateAngle); // 构建 View Matrix
 	mv *= Rotate(90, 1.0f, 0.0f, 0.0f);
-	//glUseProgram(programPhong);
+	glUseProgram(programPhong);
+	glBindVertexArray(vaoSphere);
 	glUniformMatrix4fv(MVMatrix, 1, GL_TRUE, mv);
 	glUniformMatrix4fv(PMatrix, 1, GL_TRUE, proj); // 传模视投影矩阵
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
@@ -232,9 +276,12 @@ void Display(void)
 	mv *= Translate(lightPos.x, lightPos.y, lightPos.z);
 
 	// 在光源位置绘制一个球
-	//glUseProgram(programLight);
-	glUniformMatrix4fv(MVMatrix, 1, GL_TRUE, mv * Scale(0.1, 0.1, 0.1));
-	glUniformMatrix4fv(PMatrix, 1, GL_TRUE, proj); // 传模视投影矩阵
+	glUseProgram(programLight);
+	glBindVertexArray(vaoSphereLight);
+	//glUniformMatrix4fv(MVMatrix, 1, GL_TRUE, mv * Scale(0.1, 0.1, 0.1));
+	//glUniformMatrix4fv(PMatrix, 1, GL_TRUE, proj); // 传模视投影矩阵
+	glUniformMatrix4fv(MVMatrixLight, 1, GL_TRUE, mv * Scale(0.1, 0.1, 0.1));
+	glUniformMatrix4fv(PMatrixLight, 1, GL_TRUE, proj); // 传模视投影矩阵
 	glDrawArrays(GL_TRIANGLES, 0, NumVertices);
 
 	// 观察者位于原点
@@ -249,19 +296,23 @@ void KeyPressFunc(unsigned char Key, int x, int y)
 	{
 	case '1':
 		useAmbieni = !useAmbieni;
+		glUseProgram(programPhong); 
 		glUniform1i(bAmbieni, useAmbieni ? 1 : 0);
 		break;
 	case '2':
 		useDiffuse = !useDiffuse;
+		glUseProgram(programPhong);
 		glUniform1i(bDiffuse, useDiffuse ? 1 : 0);
 		break;
 	case '3':
 		useSpecular = !useSpecular;
+		glUseProgram(programPhong);
 		glUniform1i(bSpecular, useSpecular ? 1 : 0);
 		break;
 	case 't':
 	case 'T':
 		useBlinnPhong = !useBlinnPhong;
+		glUseProgram(programPhong);
 		glUniform1i(blinn, useBlinnPhong ? 1 : 0);
 		std::cout << "Use Blinn-Phong : " << useBlinnPhong << std::endl;
 		break;
